@@ -1,21 +1,13 @@
 // DOM overlay: objective card, toast, watering-can meter, verb prompt,
 // speech bubbles and comic bursts pinned to things in the world, end card.
-import * as THREE from "three";
-
-const v = new THREE.Vector3();
-
-export function createHud(camera) {
+export function createHud(stage) {
   const $ = (id) => document.getElementById(id);
   const objTitle = $("objTitle"), objSub = $("objSub"), toastEl = $("toast");
   const canEl = $("can"), promptEl = $("verbPrompt"), layer = $("worldLayer");
   let toastTimer = null;
   const pinned = [];
 
-  function project(target, lift) {
-    const p = target.root.position;
-    v.set(p.x, (target.speakAt ?? target.top ?? 2) + lift + p.y, p.z).project(camera);
-    return { x: (v.x * 0.5 + 0.5) * window.innerWidth, y: (-v.y * 0.5 + 0.5) * window.innerHeight, behind: v.z > 1 };
-  }
+  const project = (t, lift) => stage.toScreen(t.x, t.g, (t.speakAt ?? t.top ?? 2) + lift + (t.lift ?? 0));
 
   function pin(el, target, life, lift, rise = 0) {
     layer.appendChild(el);
@@ -57,7 +49,7 @@ export function createHud(camera) {
       el.className = "burst";
       el.textContent = text;
       el.style.setProperty("--tilt", `${(Math.random() - 0.5) * 24}deg`);
-      pin(el, target, 0.8, -0.4, 60);
+      pin(el, target, 0.8, -1.3, 50);
     },
 
     showEnd() {
@@ -75,7 +67,7 @@ export function createHud(camera) {
         }
         const s = project(p.target, p.lift);
         const fade = Math.min(1, (p.life - p.age) / 0.3);
-        p.el.style.opacity = s.behind ? 0 : fade;
+        p.el.style.opacity = fade;
         p.el.style.transform = `translate(${s.x}px, ${s.y - p.rise * (p.age / p.life)}px) translate(-50%, -100%)`;
       }
     },

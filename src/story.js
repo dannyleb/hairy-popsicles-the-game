@@ -10,7 +10,7 @@
 // All dialogue here is placeholder.
 import { GRUNTS } from "./roster.js";
 import { openGate } from "./gates.js";
-import { createItem, squash } from "./world.js";
+import { createItem, floorDist, squash } from "./world.js";
 import { sfx } from "./sfx.js";
 
 const PIMPLE_SLAPS = 3;
@@ -26,9 +26,9 @@ const STEPS = {
 
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 
-export function createStory({ world, hud, tex, eyeballTex }) {
+export function createStory({ world, hud, img, eyeballImg }) {
   const s = { step: "blob", pimpleSlaps: 0, eyeSlaps: 0, roastWater: 0, talk: {}, hungryCooldown: 2 };
-  const { byId, scene } = world;
+  const { byId } = world;
   const toad = byId.toad;
 
   // Roast is food, not a bystander: move him from the cast to the items.
@@ -42,10 +42,9 @@ export function createStory({ world, hud, tex, eyeballTex }) {
     hud.setObjective(STEPS[step].title, STEPS[step].sub);
   }
 
-  function popOut(kind, texture, height, from, dx) {
-    const item = createItem(scene, kind, texture, height, from.root.position.x + dx, from.root.position.z + 1.6);
+  function popOut(kind, image, height, from, dx) {
+    const item = createItem(world, kind, image, height, from.x + dx, from.g + 0.6);
     item.hop = { t: 0, y: from.top * 0.6 };
-    world.items.push(item);
     squash(item, 1.2);
     return item;
   }
@@ -81,7 +80,7 @@ export function createStory({ world, hud, tex, eyeballTex }) {
         if (s.pimpleSlaps < PIMPLE_SLAPS) return ["OW.", "it's... moving..."][s.pimpleSlaps - 1];
         sfx.splort();
         hud.burst("SPLORT!", target);
-        popOut("blob", tex.blob, 0.9, target, 1.4);
+        popOut("blob", img.blob, 0.9, target, 1.4);
         return "oh thank god.";
       }
       if (target.id === "bigeye" && s.eyeSlaps < EYE_SLAPS) {
@@ -89,7 +88,7 @@ export function createStory({ world, hud, tex, eyeballTex }) {
         if (s.eyeSlaps < EYE_SLAPS) return "Do that again. I dare you.";
         sfx.pop();
         hud.burst("POP!", target);
-        popOut("eyeball", eyeballTex, 0.75, target, -1.3);
+        popOut("eyeball", eyeballImg, 0.75, target, -1.3);
         return "...worth it.";
       }
       return pick(GRUNTS);
@@ -135,17 +134,17 @@ export function createStory({ world, hud, tex, eyeballTex }) {
       return "*BUUURP*";
     },
 
-    update(dt, playerPos) {
+    update(dt, player) {
       for (const it of world.items) {
         if (!it.hop) continue;
         it.hop.t += dt * 1.8;
         const k = Math.min(1, it.hop.t);
-        it.root.position.y = it.hop.y * (1 - k) + Math.sin(k * Math.PI) * 1.5;
-        if (k >= 1) { it.root.position.y = 0; it.hop = null; }
+        it.lift = it.hop.y * (1 - k) + Math.sin(k * Math.PI) * 1.5;
+        if (k >= 1) { it.lift = 0; it.hop = null; }
       }
       if (s.step === "done") return;
       s.hungryCooldown -= dt;
-      const near = Math.hypot(playerPos.x - toad.root.position.x, playerPos.z - toad.root.position.z) < 9;
+      const near = floorDist(player, toad) < 9;
       if (near && s.hungryCooldown <= 0) {
         hud.say(toad, pick(["HUNGRY.", "feed me.", "hhhungry."]));
         s.hungryCooldown = 7;

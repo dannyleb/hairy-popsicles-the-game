@@ -1,7 +1,6 @@
 // Extra props drawn at runtime on canvas, in the same pen-and-colored-pencil
 // vocabulary as the scans: popsicle sticks, hatched pen shadows, hair
-// sprouting out of the paper, blue drips.
-import * as THREE from "three";
+// sprouting out of the paper, blue drips. Each returns a canvas.
 import { INK } from "./config.js";
 
 function canvas(w, h) {
@@ -10,12 +9,7 @@ function canvas(w, h) {
   return [c, c.getContext("2d")];
 }
 
-function texture(c) {
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 4;
-  return t;
-}
+const texture = (c) => c;
 
 // Colored-pencil grain: lots of short, faint diagonal strokes.
 function pencil(ctx, w, h, color, count, alpha) {

@@ -1,44 +1,41 @@
-import { AREA, PLAYER, SPAWN } from "./config.js";
-import { createCutout } from "./cutout.js";
+import { AREA, DEPTH, PLAYER, SPAWN } from "./config.js";
+import { makeEntity } from "./world.js";
 import { walkableX } from "./gates.js";
 
-export function createPlayer(tex) {
-  const cut = createCutout(tex, PLAYER.height);
-  cut.root.position.set(SPAWN.player.x, 0, SPAWN.player.z);
-  return { ...cut, walk: 0, lunge: 0 };
+export function createPlayer(img) {
+  return { ...makeEntity(img, PLAYER.height, SPAWN.x, SPAWN.g, { kind: "player", radius: PLAYER.radius }), walk: 0, lunge: 0 };
 }
 
-// Screen-relative movement: up on the stick/keys walks into the page.
+// Left/right walks across the page, up/down walks into/out of it.
 // The paper-puppet walk is a waddle and a hop; a slap is a quick lunge.
 export function updatePlayer(player, input, dt, people, gates) {
-  const pos = player.root.position;
   if (input.moving) {
     const speed = input.run ? PLAYER.runSpeed : PLAYER.speed;
-    pos.x += input.x * speed * dt;
-    pos.z += input.z * speed * dt;
+    player.x += input.x * speed * dt;
+    player.g += input.z * speed * PLAYER.depthSpeed * dt;
     player.walk += dt * (input.run ? 16 : 11);
   } else {
     player.walk = 0;
   }
 
   for (const p of people) {
-    const dx = pos.x - p.root.position.x, dz = pos.z - p.root.position.z;
-    const min = p.radius + PLAYER.radius, d = Math.hypot(dx, dz);
+    const dx = player.x - p.x, dg = (player.g - p.g) * DEPTH;
+    const min = p.radius + PLAYER.radius, d = Math.hypot(dx, dg);
     if (d < min && d > 1e-4) {
-      pos.x = p.root.position.x + (dx / d) * min;
-      pos.z = p.root.position.z + (dz / d) * min;
+      player.x = p.x + (dx / d) * min;
+      player.g = p.g + (dg / d) * min / DEPTH;
     }
   }
 
   const [minX, maxX] = walkableX(gates, PLAYER.radius);
-  pos.x = Math.max(minX, Math.min(maxX, pos.x));
-  pos.z = Math.max(AREA.minZ, Math.min(AREA.maxZ, pos.z));
+  player.x = Math.max(minX, Math.min(maxX, player.x));
+  player.g = Math.max(0.4, Math.min(AREA.front, player.g));
 
   let tilt = input.moving ? Math.sin(player.walk) * 0.12 : 0;
   if (player.lunge > 0) {
     player.lunge = Math.max(0, player.lunge - dt);
     tilt += Math.sin((player.lunge / 0.25) * Math.PI) * -0.45;
   }
-  player.pivot.rotation.z = tilt;
-  player.pivot.position.y = input.moving ? Math.abs(Math.sin(player.walk)) * 0.18 : 0;
+  player.rot = tilt;
+  player.lift = input.moving ? Math.abs(Math.sin(player.walk)) * 0.18 : 0;
 }

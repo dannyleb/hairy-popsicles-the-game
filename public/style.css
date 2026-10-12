@@ -12,7 +12,8 @@ html, body {
   font-family: "Patrick Hand", "Comic Sans MS", system-ui, sans-serif;
 }
 
-#app, #viewport { position: absolute; inset: 0; }
+#app { position: fixed; inset: 0; }
+#viewport { position: absolute; inset: 0; }
 #gameCanvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
 
 /* Hand-inked card: off-white paper, wobbly black border. */
@@ -130,8 +131,8 @@ html, body {
 #dpad .right { right: 0; top: 50px; }
 
 #startOverlay {
-  position: absolute; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center;
-  background: var(--paper); transition: opacity 0.5s; padding: 16px;
+  position: fixed; inset: 0; z-index: 10; display: flex; align-items: safe center; justify-content: center;
+  background: var(--paper); transition: opacity 0.5s; padding: 16px; overflow-y: auto;
 }
 #startOverlay.hidden { opacity: 0; pointer-events: none; }
 #startCard { max-width: 560px; width: 100%; text-align: center; }
@@ -158,3 +159,12 @@ html, body {
 .chunk:hover:not(:disabled) { transform: rotate(-2deg) scale(1.04); }
 .chunk:disabled { background: var(--paper); cursor: wait; }
 .fine { font-size: 14px !important; opacity: 0.55; margin-top: 18px !important; }
+
+@media (max-height: 500px) {
+  .lineup { height: 70px; }
+  #startCard h1 { font-size: 38px; }
+  #startCard h1 br { display: none; }
+  #startCard p { margin: 2px 0; font-size: 17px; }
+  .controlsGrid { margin: 4px 0 8px; font-size: 14px; }
+  .fine { margin-top: 8px !important; }
+}

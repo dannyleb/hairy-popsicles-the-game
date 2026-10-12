@@ -1,34 +1,32 @@
 # Hairy Popsicles
 
-A browser-based 3D game built with Three.js, where every character is a
-hand-drawn ink-and-colored-pencil drawing cut out of the page. Design
-inspiration: [The Good Time Garden](https://store.steampowered.com/app/1200860/The_Good_Time_Garden/)
+A flat 2D browser game where every character is a hand-drawn
+ink-and-colored-pencil drawing cut out of the page. Design inspiration:
+[The Good Time Garden](https://store.steampowered.com/app/1200860/The_Good_Time_Garden/)
 by Coal Supper: a short, gross, surreal garden where you slap, water and
-carry things to feed a friend who's always hungry. Fully static site, no framework, no server code; same stack and
-layout as [Eagle Lake: Green Dog Run](https://github.com/dannyleb/eagle-lake-3d).
+carry things to feed a friend who's always hungry. Fully static site, no
+framework, no server code, deployed to GitHub Pages like
+[Eagle Lake: Green Dog Run](https://github.com/dannyleb/eagle-lake-3d).
 
 ## Art direction
 
-- **The world is the sketchbook page.** The ground is a real scanned paper
-  texture, and the fog is paper-white, so the world fades back into blank
-  paper at the edges.
-- **Characters are the scans themselves**, cut out of the paper and stood
-  up as flat billboards (the Don't Starve / Paper Mario approach). The
-  camera holds a fixed three-quarter angle so the art always faces you.
+- **The world is the sketchbook page.** Side-on 2D stage: scanned paper
+  everywhere, a hand-wobbly ink horizon line, sky above, floor below. The
+  camera scrolls left and right; you can also walk into and out of the
+  page on a shallow floor, and things further back are painted behind.
+- **Characters are the scans themselves**, cut out of the paper. Nothing
+  is mirrored, recolored or scaled by depth.
 - **Floating heads are popsicles**, planted on wooden sticks and swaying.
 - **Props are drawn in the same vocabulary** at runtime (`src/ink.js`):
-  pen-hatched shadows like the ones in the balloon-gang drawing, stray
-  hairs sprouting from the paper, blue drips, the sticks.
-- **Unlit.** Everything uses flat, unlit materials so pencil colors render
-  exactly as drawn. The ink is already in the art, so there's no outline
-  shader.
+  pen-hatched shadows like the ones in the balloon-gang drawing, hair
+  sprouting from the paper, hedges of hair, blue drips, the sticks.
 
 ## Tech stack
 
 | Area | Choice |
 |---|---|
-| Rendering | [Three.js](https://threejs.org/) (WebGL) |
-| Language | Plain JavaScript (ES modules), no framework |
+| Rendering | Canvas 2D, no engine |
+| Language | Plain JavaScript (ES modules), no framework, no runtime dependencies |
 | Bundler | esbuild: one IIFE bundle targeting ES2019 |
 | Art pipeline | `tools/cutout.mjs` with [sharp](https://sharp.pixelplumbing.com/) (dev only) |
 | Linting | ESLint 9 (flat config, `eslint.config.js`) |
@@ -72,17 +70,16 @@ All names and dialogue are placeholders. `?debug` in the URL exposes
 ## Project structure
 
 ```
-src/main.js          texture loading, game loop, start screen wiring
-src/config.js        world, player, camera, paper/ink colors
+src/main.js          image loading, game loop, start screen wiring
+src/config.js        stage size, walkable area, player, colors
 src/roster.js        every character: sprite, size, stick, position, lines; drip spots
 src/story.js         the puzzle chain: what slapping/watering/feeding does to whom
 src/interact.js      the verbs: slap, grab/give/talk, water; carrying; spray and feeding arcs
+src/stage.js         the 2D renderer: paper, horizon, moon, depth-sorted drawing, camera
+src/world.js         entities (cast, items, drips), squash-and-stretch, sway
 src/gates.js         hair hedges: page edges and the two zone gates
-src/cutout.js        a drawing standing in the world (art + stick + shadow)
 src/ink.js           runtime-drawn props: stick, hatched shadow, hair, drip, eyeball
-src/world.js         paper ground, fog, cast, items, drips, moon, squash-and-stretch
 src/player.js        movement, zone bounds, collisions, waddle and slap lunge
-src/camera.js        fixed three-quarter follow camera
 src/controls.js      keyboard, D-pad and verb buttons
 src/sfx.js           procedural sound: slap, splash, gulp, burp, pop, splort
 src/ui/hud.js        objective, can meter, verb prompt, speech bubbles, bursts, end card

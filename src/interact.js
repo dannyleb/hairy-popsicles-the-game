@@ -2,39 +2,38 @@
 //   Slap  (Space)  whack whoever is nearest
 //   Grab  (E)      pick up / drop / feed Toad / talk
 //   Water (Q)      splash from your can (refill by walking into drips)
-import * as THREE from "three";
-import { CAN_SIZE, LEAN, REACH } from "./config.js";
-import { collectDrips, squash } from "./world.js";
+import { CAN_SIZE, REACH } from "./config.js";
+import { collectDrips, floorDist, makeEntity, squash } from "./world.js";
 import { dripTexture } from "./ink.js";
 import { sfx } from "./sfx.js";
 
-const flatDist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+const SPRAY = dripTexture();
 
 export function createInteractions({ world, player, hud, story }) {
-  const scene = world.scene;
   let carrying = null;
   let can = 0;
   const flying = [];
-  const sprayMat = new THREE.MeshBasicMaterial({ map: dripTexture(), alphaTest: 0.5, side: THREE.DoubleSide });
-  const sprayGeo = new THREE.PlaneGeometry(0.22, 0.32);
 
   hud.setCan(can, CAN_SIZE);
 
   function nearest(list, extra = 0) {
-    const p = player.root.position;
     let best = null, bestD = Infinity;
     for (const e of list) {
       if (e.carried || e.hop || e.eaten) continue;
-      const d = flatDist(p, e.root.position) - e.radius;
+      const d = floorDist(player, e) - e.radius;
       if (d < REACH + extra && d < bestD) { best = e; bestD = d; }
     }
     return best;
   }
 
-  const nearToad = () => flatDist(player.root.position, story.toad.root.position) - story.toad.radius < REACH + 1;
+  const nearToad = () => floorDist(player, story.toad) - story.toad.radius < REACH + 1;
 
   function say(target, line) {
     if (line) hud.say(target, line);
+  }
+
+  function fly(e, to, dur, arc, done) {
+    flying.push({ e, from: { x: e.x, g: e.g, lift: e.lift }, to, t: 0, dur, arc, done });
   }
 
   function slap() {
@@ -56,14 +55,17 @@ export function createInteractions({ world, player, hud, story }) {
     hud.setCan(can, CAN_SIZE);
     sfx.splash();
     const target = nearest([...world.people, ...world.items], 1);
-    const from = player.root.position.clone().setY(player.top * 0.8);
-    const to = target ? target.root.position.clone().setY(target.top * 0.6) : from.clone().add(new THREE.Vector3(0, -1.5, -2.5));
+    const to = target
+      ? { x: target.x, g: target.g + 0.05, lift: target.top * 0.6 }
+      : { x: player.x + 2.5, g: player.g, lift: 0 };
     for (let i = 0; i < 7; i++) {
-      const m = new THREE.Mesh(sprayGeo, sprayMat);
-      m.rotation.x = LEAN;
-      scene.add(m);
-      const jitter = new THREE.Vector3((Math.random() - 0.5) * 0.8, (Math.random() - 0.5) * 0.5, (Math.random() - 0.5) * 0.4);
-      flying.push({ mesh: m, from, to: to.clone().add(jitter), t: -i * 0.04, dur: 0.45, arc: 1.2 });
+      const d = makeEntity(SPRAY, 0.32, player.x + 0.3, player.g, { shadow: false, kind: "spray" });
+      d.lift = player.top * 0.8;
+      world.fx.push(d);
+      fly(d, { x: to.x + (Math.random() - 0.5) * 0.8, g: to.g, lift: to.lift + (Math.random() - 0.5) * 0.6 }, 0.45, 1.2, () => {
+        world.fx.splice(world.fx.indexOf(d), 1);
+      });
+      flying[flying.length - 1].t = -i * 0.04;
     }
     if (target) {
       setTimeout(() => {
@@ -78,23 +80,21 @@ export function createInteractions({ world, player, hud, story }) {
       const item = carrying;
       if (nearToad() && story.edible(item)) {
         carrying = null;
+        item.carried = false;
         item.eaten = true;
-        const mouth = story.toad.root.position.clone().add(new THREE.Vector3(0.4, story.toad.top * 0.45, 0.3));
-        flying.push({
-          mesh: item.root, from: item.root.position.clone(), to: mouth, t: 0, dur: 0.6, arc: 2,
-          shrink: true,
-          done: () => {
-            scene.remove(item.root);
-            world.items.splice(world.items.indexOf(item), 1);
-            say(story.toad, story.fed(item));
-          },
+        const toad = story.toad;
+        fly(item, { x: toad.x + 0.4, g: toad.g + 0.01, lift: toad.top * 0.45 }, 0.6, 2, () => {
+          world.items.splice(world.items.indexOf(item), 1);
+          say(toad, story.fed(item));
         });
+        flying[flying.length - 1].shrink = true;
         return;
       }
       carrying = null;
       item.carried = false;
-      const p = player.root.position;
-      item.root.position.set(p.x + 0.9, 0, p.z + 0.4);
+      item.x = player.x + 0.9;
+      item.g = player.g + 0.15;
+      item.lift = 0;
       squash(item, 0.6);
       sfx.grab();
       return;
@@ -122,20 +122,22 @@ export function createInteractions({ world, player, hud, story }) {
       const f = flying[i];
       f.t += dt;
       const k = Math.max(0, Math.min(1, f.t / f.dur));
-      f.mesh.position.lerpVectors(f.from, f.to, k);
-      f.mesh.position.y += Math.sin(k * Math.PI) * f.arc;
-      if (f.shrink) f.mesh.scale.setScalar(1 - k * 0.8);
+      f.e.x = f.from.x + (f.to.x - f.from.x) * k;
+      f.e.g = f.from.g + (f.to.g - f.from.g) * k;
+      f.e.lift = f.from.lift + (f.to.lift - f.from.lift) * k + Math.sin(k * Math.PI) * f.arc;
+      if (f.shrink) f.e.scale = 1 - k * 0.8;
       if (k >= 1) {
-        if (f.done) f.done();
-        else scene.remove(f.mesh);
         flying.splice(i, 1);
+        if (f.done) f.done();
       }
     }
   }
 
   return {
+    get carrying() { return carrying; },
+
     update(input, dt) {
-      const got = collectDrips(world, player.root.position, CAN_SIZE - can);
+      const got = collectDrips(world, player, CAN_SIZE - can);
       if (got) {
         can += got;
         hud.setCan(can, CAN_SIZE);
@@ -147,8 +149,9 @@ export function createInteractions({ world, player, hud, story }) {
       if (input.grab) grab();
 
       if (carrying) {
-        const p = player.root.position;
-        carrying.root.position.set(p.x, player.top + 0.1 + player.pivot.position.y, p.z + 0.05);
+        carrying.x = player.x;
+        carrying.g = player.g;
+        carrying.lift = player.top + 0.1 + player.lift;
       }
       updateFlying(dt);
 
