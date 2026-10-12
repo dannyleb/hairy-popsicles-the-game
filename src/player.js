@@ -11,7 +11,7 @@ export function createPlayer(img) {
 // The paper-puppet walk is a waddle and a hop; a slap is a quick lunge.
 export function updatePlayer(player, input, dt, people, gates) {
   if (input.moving) {
-    const speed = input.run ? PLAYER.runSpeed : PLAYER.speed;
+    const speed = (input.run ? PLAYER.runSpeed : PLAYER.speed) * (player.speedMul || 1);
     player.x += input.x * speed * dt;
     player.g += input.z * speed * PLAYER.depthSpeed * dt;
     const before = Math.floor(player.walk / Math.PI);

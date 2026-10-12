@@ -22,7 +22,15 @@ const BIG = ["blob", "roast", "eyeball"];
 
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 
-export function createStory({ world, hud, img, eyeballImg, onOpen }) {
+// Toad's craving of the day: one scrap counts double, the same all day.
+export function cravingFor(dateStr) {
+  let h = 0;
+  for (const ch of dateStr) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return ["crumb", "pube", "fly"][h % 3];
+}
+const CRAVE_NAME = { crumb: "crumbs", pube: "hairs", fly: "flies" };
+
+export function createStory({ world, hud, img, eyeballImg, onOpen, onEvent = () => {}, progress, craving }) {
   const s = { stage: 0, belly: 0, done: false, pimpleSlaps: 0, eyeSlaps: 0, roastWater: 0, talk: {}, hungryCooldown: 2, note: 0 };
   const { byId } = world;
   const toad = byId.toad;
@@ -41,7 +49,7 @@ export function createStory({ world, hud, img, eyeballImg, onOpen }) {
     } else if (s.note > 0) {
       return;
     } else {
-      hud.setObjective("Feed Toad", "Crumbs, hairs, flies, anything.");
+      hud.setObjective("Feed Toad", `Today he craves ${CRAVE_NAME[craving]} (x2).`);
     }
     hud.setBelly(s.done ? 1 : s.belly / goal(), s.done ? "" : `${s.belly}/${goal()}`);
   }
@@ -64,14 +72,19 @@ export function createStory({ world, hud, img, eyeballImg, onOpen }) {
     const stage = STAGES[s.stage];
     setTimeout(() => sfx.burp(), 350);
     squash(toad, 2);
+    toad.fat = 1.25;
+    toad.deflate = !STAGES[s.stage].opens ? false : true;
     if (!stage.opens) {
       s.done = true;
+      progress.add("fullFeeds");
+      onEvent("fedUp");
       showObjective();
       setTimeout(() => hud.showEnd(), 1600);
       return;
     }
     const gate = world.gates[stage.opens];
     openGate(gate);
+    progress.add("zones");
     sfx.rustle();
     s.stage++;
     s.belly = 0;
@@ -84,8 +97,11 @@ export function createStory({ world, hud, img, eyeballImg, onOpen }) {
   // Add food to Toad's belly. Returns what he says.
   function eat(kind) {
     if (s.done) return null;
-    s.belly += FOOD[kind] || 1;
-    squash(toad, 0.6 + Math.min(1, (FOOD[kind] || 1) / 6));
+    const worth = (FOOD[kind] || 1) * (kind === craving ? 2 : 1);
+    s.belly += worth;
+    if (kind === craving) hud.floatText("x2", toad, "#f1c56c");
+    toad.fat = Math.min(1, s.belly / goal());
+    squash(toad, 0.6 + Math.min(1, worth / 6));
     if (s.belly >= goal()) {
       full();
       return "*BUUUURP*";
@@ -122,6 +138,7 @@ export function createStory({ world, hud, img, eyeballImg, onOpen }) {
         sfx.splort();
         hud.burst("SPLORT!", target);
         popOut("blob", img.blob, 0.9, target, 1.4);
+        onEvent("blob");
         return "oh thank god.";
       }
       if (target.id === "bigeye" && s.eyeSlaps < EYE_SLAPS) {
@@ -130,6 +147,7 @@ export function createStory({ world, hud, img, eyeballImg, onOpen }) {
         sfx.pop();
         hud.burst("POP!", target);
         popOut("eyeball", eyeballImg, 0.75, target, -1.3);
+        onEvent("eyeball");
         return "...worth it.";
       }
       return pick(GRUNTS);
@@ -140,6 +158,7 @@ export function createStory({ world, hud, img, eyeballImg, onOpen }) {
         s.roastWater++;
         if (s.roastWater < ROAST_WATER) return ["ahh.", "more...", "MORE."][Math.min(2, s.roastWater - 1)];
         target.juicy = true;
+        onEvent("juicy");
         hud.burst("JUICY!", target);
         hud.toast("Roast is juicy. Toad would love him.");
         return "I'm ready.";
@@ -161,6 +180,13 @@ export function createStory({ world, hud, img, eyeballImg, onOpen }) {
     },
 
     update(dt, player) {
+      // Toad swells as he eats; after a full meal he deflates back down.
+      const fat = toad.fat || 0;
+      toad.scale += (1 + Math.min(fat, 1.25) * 0.2 - toad.scale) * Math.min(1, dt * 3);
+      if (toad.deflate) {
+        toad.fat = Math.max(s.belly / goal(), fat - dt * 0.4);
+        if (toad.fat <= s.belly / goal()) toad.deflate = false;
+      }
       for (const it of world.items) {
         if (!it.hop) continue;
         it.hop.t += dt * 1.8;

@@ -2,7 +2,7 @@
 // yellowing skin wall behind, a flushed peach skin floor in front, split by
 // a wobbly ink horizon; everything on the floor is painted back-to-front.
 import { AREA, INK, VIEW } from "./config.js";
-import { FLOOR_SKIN, WALL_SKIN, hedgeTexture, pimpleTexture, rng, shadowTexture, skinTile, stickTexture } from "./ink.js";
+import { FLOOR_SKIN, WALL_SKIN, drawCosmetic, hedgeTexture, pimpleTexture, rng, shadowTexture, skinTile, stickTexture } from "./ink.js";
 import { environment } from "./daynight.js";
 import { gateAlpha, gateScale } from "./gates.js";
 
@@ -148,6 +148,7 @@ export function createStage(canvas) {
     } else {
       ctx.rotate(e.headTilt || 0);
       ctx.drawImage(e.img, -e.w / 2 * U, -e.h * U, e.w * U, e.h * U);
+      if (e.cosmetics) for (const c of e.cosmetics) drawCosmetic(ctx, c, -e.w / 2 * U, -e.h * U, e.w * U, e.h * U);
     }
     ctx.restore();
   }
@@ -322,6 +323,15 @@ export function createStage(canvas) {
       ctx.restore();
     }
 
+    // Pus stains and puddles, flat on the skin; they fade before vanishing.
+    for (const st of world.stains || []) {
+      const w = st.size, h = st.size * 0.4;
+      if (!onScreen(st.x, w)) continue;
+      ctx.globalAlpha = Math.min(1, (st.life - st.t) / 5, st.t * 6) * (st.splash ? 1 - st.splash * 0.3 : 1);
+      ctx.drawImage(st.img, X(st.x) - (w / 2) * U, Y(st.g) - (h / 2) * U, w * U, h * U);
+    }
+    ctx.globalAlpha = 1;
+
     // Where you last tapped to walk.
     const tm = world.tapMark;
     if (tm && tm.t < 0.7) {
@@ -391,8 +401,22 @@ export function createStage(canvas) {
     }
   }
 
+  // Screen shake: the whole canvas jolts and settles.
+  let shakeT = 0, shakePow = 0;
+  function shake(power) {
+    shakePow = Math.max(shakePow * (shakeT > 0 ? 1 : 0), power);
+    shakeT = 0.35;
+  }
+  function applyShake(dt) {
+    if (shakeT <= 0) return;
+    shakeT -= dt;
+    if (shakeT <= 0) { canvas.style.transform = ""; shakePow = 0; return; }
+    const k = shakePow * U * (shakeT / 0.35);
+    canvas.style.transform = `translate(${(Math.random() - 0.5) * k}px, ${(Math.random() - 0.5) * k}px)`;
+  }
+
   return {
-    resize, follow, draw,
+    resize, follow, draw, shake, applyShake,
     toScreen: (x, g, lift) => ({ x: X(x), y: Y(g) - lift * U }),
     toWorld: (sx, sy) => ({ x: (sx - W / 2) / U + cam.x, g: (sy - H / 2) / U + cam.g }),
     // Frontmost entity whose drawing covers screen point (sx, sy), with a

@@ -27,6 +27,7 @@
         <div id="pockets">pockets empty</div>
       </div>
       <div id="pusWrap" aria-label="Pus points"><span class="pusDrop"></span><span class="pusTxt"><b id="pusCount">0</b><small>PUS POINTS</small></span></div>
+      <button id="pauseBtn" aria-label="Pause and menu"><i></i><i></i><i></i></button>
       <button class="musicBtn" id="musicGame" hidden aria-label="Turn music off"></button>
       <div id="canWrap" aria-label="Watering can"><span class="canLbl">CAN</span><span id="can"></span></div>
     </header>
@@ -35,6 +36,7 @@
       <canvas id="gameCanvas"></canvas>
       <div id="worldLayer"></div>
       <div id="toast"></div>
+      <div id="banner" aria-live="polite"><span class="bKick"></span><span class="bTitle"></span><span class="bSub"></span></div>
       <div id="verbPrompt" data-verb="grab"></div>
       <div id="dpad" aria-label="Direction pad">
         <div class="arrow up"></div><div class="arrow right"></div><div class="arrow down"></div><div class="arrow left"></div>
@@ -53,6 +55,23 @@
         </div>
       </div>
     </main>
+  </div>
+
+  <div id="menu" hidden role="dialog" aria-modal="true">
+    <div class="menuCard">
+      <div class="menuHead"><span id="menuTitle"></span><button id="menuClose" aria-label="Close">&times;</button></div>
+      <div class="menuTabs" id="menuTabs"></div>
+      <div class="menuBody" id="menuBody"></div>
+    </div>
+  </div>
+  <div id="pageView" hidden role="dialog" aria-modal="true">
+    <div class="pageCardBig">
+      <button id="pageClose" aria-label="Close">&times;</button>
+      <img id="pageImg" alt="The original drawing" />
+      <h3 id="pageName"></h3>
+      <p id="pageNote"></p>
+      <p id="pageWant"></p>
+    </div>
   </div>
 
   <div id="startOverlay">

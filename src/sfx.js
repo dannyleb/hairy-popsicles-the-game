@@ -1,6 +1,6 @@
 // Procedural sound effects (Web Audio, no files). unlock() must run inside
 // a real user gesture or phones stay silent.
-let ctx = null, master = null, buzzNode = null;
+let ctx = null, master = null, buzzNode = null, ambience = null;
 
 export function unlock() {
   if (!ctx) {
@@ -119,9 +119,9 @@ export const sfx = {
   },
   // A wet bubble popping: a fast upward pitch blip with a click, then a
   // small low blub.
-  bubble(size = 1) {
+  bubble(size = 1, combo = 1) {
     if (!ready()) return;
-    const f = 520 / Math.sqrt(size);
+    const f = (520 / Math.sqrt(size)) * Math.pow(1.07, Math.min(combo - 1, 14));
     tone("sine", f, f * 3.2, 0.045, 0.55);
     burst(4200, 1.2, 0.025, 0.5, "highpass");
     tone("sine", f * 0.45, f * 0.25, 0.12, 0.35, 0.04);
@@ -172,6 +172,56 @@ export const sfx = {
       buzzNode = g;
     }
     buzzNode.gain.setTargetAtTime(level * 0.09, ctx.currentTime, 0.1);
+  },
+  // A little music-box chime: album pages, achievements.
+  chime() {
+    if (!ready()) return;
+    [784, 988, 1175, 1568].forEach((f, i) => tone("triangle", f, f, 0.35, 0.18, i * 0.09));
+  },
+  // Golden whitehead: a wet fanfare.
+  jackpot() {
+    if (!ready()) return;
+    [523, 659, 784, 1047, 1319].forEach((f, i) => tone("square", f, f * 1.01, 0.18, 0.12, i * 0.07));
+    burst(1500, 1.5, 0.6, 0.35, "bandpass", 0.1);
+  },
+  buy() {
+    if (!ready()) return;
+    tone("triangle", 660, 660, 0.08, 0.25);
+    tone("triangle", 990, 990, 0.18, 0.25, 0.08);
+  },
+  // A quiet ambient bed per zone: the west gurgles, the east squeaks.
+  zone(name) {
+    if (!ready()) return;
+    if (!ambience) {
+      const mk = (build) => { const g = ctx.createGain(); g.gain.value = 0; build(g); g.connect(master); return g; };
+      ambience = {
+        hub: mk(() => {}),
+        west: mk((g) => {
+          const n = noise(4);
+          n.loop = true;
+          const f = ctx.createBiquadFilter();
+          f.type = "lowpass"; f.frequency.value = 260; f.Q.value = 8;
+          const lfo = ctx.createOscillator(), lg = ctx.createGain();
+          lfo.frequency.value = 0.7; lg.gain.value = 140;
+          lfo.connect(lg); lg.connect(f.frequency);
+          n.connect(f); f.connect(g);
+          n.start(); lfo.start();
+        }),
+        east: mk((g) => {
+          for (const fr of [1760, 2217, 2637]) {
+            const o = ctx.createOscillator(), og = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
+            o.type = "sine"; o.frequency.value = fr;
+            lfo.frequency.value = 3 + fr / 1000; lg.gain.value = 0.5;
+            og.gain.value = 0.5;
+            lfo.connect(lg); lg.connect(og.gain);
+            o.connect(og); og.connect(g);
+            o.start(); lfo.start();
+          }
+        }),
+      };
+    }
+    const level = { hub: 0, west: 0.16, east: 0.03 };
+    for (const [k, g] of Object.entries(ambience)) g.gain.setTargetAtTime(k === name ? level[k] : 0, ctx.currentTime, 1.2);
   },
   rustle() {
     if (!ready()) return;

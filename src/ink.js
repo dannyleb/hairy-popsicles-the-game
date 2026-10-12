@@ -523,3 +523,159 @@ export function flyTexture(wingsUp, dead = false) {
   }
   return c;
 }
+
+// ---------- rewards ----------
+
+// The rare golden whitehead: same swollen shape, gold dome, glinting head.
+export function goldenPimpleTexture(seed) {
+  const c = pimpleTexture(seed);
+  const ctx = c.getContext("2d");
+  ctx.globalCompositeOperation = "source-atop";
+  ctx.fillStyle = "rgba(255, 200, 40, 0.55)";
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.globalCompositeOperation = "source-over";
+  ctx.fillStyle = "#fffbe8";
+  for (const [x, y, r] of [[60, 50, 7], [160, 70, 5], [120, 30, 4]]) {
+    ctx.beginPath();
+    ctx.moveTo(x, y - r * 2); ctx.lineTo(x + r * 0.5, y - r * 0.5); ctx.lineTo(x + r * 2, y);
+    ctx.lineTo(x + r * 0.5, y + r * 0.5); ctx.lineTo(x, y + r * 2); ctx.lineTo(x - r * 0.5, y + r * 0.5);
+    ctx.lineTo(x - r * 2, y); ctx.lineTo(x - r * 0.5, y - r * 0.5); ctx.closePath();
+    ctx.fill();
+  }
+  return c;
+}
+
+// A pus glob with something glinting inside: holds a curio.
+export function mysteryGlobTexture() {
+  const c = pusGlobTexture(77);
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "#c8364a";
+  ctx.beginPath();
+  ctx.arc(56, 56, 11, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.stroke();
+  ctx.fillStyle = "#fffbe8";
+  ctx.font = "bold 16px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("?", 56, 62);
+  return c;
+}
+
+// A pus splat left on the skin after a pop.
+export function stainTexture(seed) {
+  const rand = rng(seed);
+  const [c, ctx] = canvas(200, 80);
+  blob(ctx, 100, 40, 90, 28, rand, 14, 0.35);
+  ctx.fillStyle = "rgba(226, 196, 98, 0.75)";
+  ctx.fill();
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath();
+    ctx.arc(20 + rand() * 160, 12 + rand() * 56, 4 + rand() * 7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  return c;
+}
+
+export const CURIOS = [
+  { id: "toenail", name: "Toenail Clipping" },
+  { id: "tooth", name: "Baby Tooth" },
+  { id: "lens", name: "Lost Contact Lens" },
+  { id: "scab", name: "Old Scab" },
+  { id: "lash", name: "Wish Eyelash" },
+  { id: "wax", name: "Earwax Pearl" },
+  { id: "lint", name: "Belly Button Lint" },
+  { id: "wisdom", name: "Wisdom Tooth" },
+];
+
+export function curioTexture(id) {
+  const [c, ctx] = canvas(120, 120);
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = INK;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  const fillStroke = (fill) => { ctx.fillStyle = fill; ctx.fill(); ctx.stroke(); };
+  ctx.beginPath();
+  if (id === "toenail") {
+    ctx.moveTo(18, 70); ctx.quadraticCurveTo(60, 20, 102, 70); ctx.quadraticCurveTo(60, 52, 18, 70);
+    fillStroke("#f3e3c4");
+  } else if (id === "tooth" || id === "wisdom") {
+    const big = id === "wisdom";
+    ctx.moveTo(30, 30); ctx.quadraticCurveTo(60, big ? 10 : 18, 90, 30);
+    ctx.quadraticCurveTo(96, 60, 82, 64); ctx.lineTo(76, 100); ctx.lineTo(64, 70);
+    if (big) { ctx.lineTo(56, 70); ctx.lineTo(46, 102); } else ctx.lineTo(56, 70);
+    ctx.lineTo(44, 100); ctx.lineTo(38, 64); ctx.quadraticCurveTo(24, 60, 30, 30);
+    fillStroke(big ? "#f1e4b0" : "#fdf8ec");
+  } else if (id === "lens") {
+    ctx.ellipse(60, 64, 40, 26, 0, 0, Math.PI * 2);
+    fillStroke("rgba(160, 210, 240, 0.7)");
+    ctx.beginPath(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 4;
+    ctx.arc(48, 56, 12, Math.PI, Math.PI * 1.6); ctx.stroke();
+  } else if (id === "scab") {
+    blob(ctx, 60, 62, 40, 32, rng(9), 11, 0.3);
+    fillStroke("#8a3a2e");
+    ctx.beginPath(); ctx.fillStyle = "#b8564a";
+    ctx.ellipse(50, 52, 14, 9, -0.4, 0, Math.PI * 2); ctx.fill();
+  } else if (id === "lash") {
+    ctx.moveTo(20, 90); ctx.bezierCurveTo(40, 30, 80, 20, 100, 36);
+    ctx.lineWidth = 6; ctx.stroke();
+  } else if (id === "wax") {
+    blob(ctx, 60, 64, 34, 30, rng(4), 9, 0.15);
+    fillStroke("#d99a3a");
+    ctx.beginPath(); ctx.fillStyle = "#f7d27a";
+    ctx.ellipse(48, 52, 10, 7, -0.5, 0, Math.PI * 2); ctx.fill();
+  } else if (id === "lint") {
+    blob(ctx, 60, 62, 38, 32, rng(2), 14, 0.35);
+    fillStroke("#8fa3b8");
+    ctx.lineWidth = 2.5;
+    for (let i = 0; i < 9; i++) {
+      const a = i * 0.7;
+      ctx.beginPath(); ctx.moveTo(60 + Math.cos(a) * 30, 62 + Math.sin(a) * 26); ctx.lineTo(60 + Math.cos(a) * 46, 62 + Math.sin(a) * 40); ctx.stroke();
+    }
+  }
+  return c;
+}
+
+// Things the player can wear, drawn over the Antenna sprite. Coordinates
+// are shares of the sprite's box (0..1 across and down).
+export function drawCosmetic(ctx, id, x, y, w, h) {
+  const P = (fx, fy) => [x + fx * w, y + fy * h];
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = INK;
+  if (id === "wart") {
+    const [cx, cy] = P(0.74, 0.265);
+    ctx.fillStyle = "#b98a5e";
+    ctx.beginPath(); ctx.arc(cx, cy, w * 0.07, 0, Math.PI * 2); ctx.fill();
+    ctx.lineWidth = Math.max(1.5, w * 0.02); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy - w * 0.06); ctx.lineTo(cx + w * 0.05, cy - w * 0.16); ctx.stroke();
+  } else if (id === "unibrow") {
+    const [x0, y0] = P(0.3, 0.12), [x1, y1] = P(0.78, 0.115);
+    ctx.lineWidth = Math.max(3, h * 0.016);
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo((x0 + x1) / 2, y0 - h * 0.022, x1, y1); ctx.stroke();
+  } else if (id === "stain") {
+    const [cx, cy] = P(0.56, 0.47);
+    ctx.fillStyle = "rgba(170, 140, 40, 0.75)";
+    blob(ctx, cx, cy, w * 0.16, h * 0.04, rng(3), 9, 0.35);
+    ctx.fill();
+  } else if (id === "tuft") {
+    const [bx, by] = P(0.6, 0.1);
+    ctx.lineWidth = Math.max(2, w * 0.025);
+    for (const [dx, dy] of [[-0.12, -0.08], [0, -0.1], [0.12, -0.07]]) {
+      ctx.beginPath(); ctx.moveTo(bx, by);
+      ctx.quadraticCurveTo(bx + dx * w * 0.3, by + dy * h * 0.6, bx + dx * w, by + dy * h);
+      ctx.stroke();
+    }
+  } else if (id === "drool") {
+    const [mx, my] = P(0.56, 0.295);
+    ctx.fillStyle = "#9fd0f0";
+    ctx.beginPath();
+    ctx.moveTo(mx - w * 0.03, my);
+    ctx.quadraticCurveTo(mx - w * 0.03, my + h * 0.06, mx, my + h * 0.075);
+    ctx.quadraticCurveTo(mx + w * 0.035, my + h * 0.06, mx + w * 0.03, my);
+    ctx.closePath();
+    ctx.fill();
+    ctx.lineWidth = Math.max(1.5, w * 0.015); ctx.stroke();
+  }
+  ctx.restore();
+}

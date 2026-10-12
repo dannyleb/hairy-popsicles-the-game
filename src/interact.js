@@ -5,19 +5,46 @@
 //   Tap/click a pimple to walk over and pop it
 // Crumbs, hairs and dead flies go in your pockets just by walking over them
 // (scraps.js); E next to Toad feeds him everything in your pockets.
-import { CAN_SIZE, DEPTH, REACH } from "./config.js";
+import { DEPTH, REACH } from "./config.js";
 import { collectDrips, floorDist, makeEntity, popPimple, squash } from "./world.js";
 import { dripTexture } from "./ink.js";
 import { sfx } from "./sfx.js";
 
 const SPRAY = dripTexture();
 
-export function createInteractions({ world, player, hud, story, pus, scraps }) {
+export function createInteractions({ world, player, hud, story, pus, scraps, album, progress, upgrades, stage, isNight, openShop }) {
   let carrying = null;
   let can = 0;
+  let combo = 0, comboT = 0;
   const flying = [];
+  const canSize = () => upgrades().can;
 
-  hud.setCan(can, CAN_SIZE);
+  hud.setCan(can, canSize());
+
+  // Mirror runs the shop; anyone else who wants a scrap you're carrying
+  // gets one when you press E next to them.
+  const giftFor = (p) => album.wants(p, scraps.pockets);
+
+  function talkTo(p) {
+    if (p.id === "mirror") {
+      sfx.grunt();
+      say(p, album.onTalk(p) ?? "Let's see what you can afford.");
+      openShop();
+      return;
+    }
+    const kind = giftFor(p);
+    if (kind) {
+      scraps.pockets.splice(scraps.pockets.indexOf(kind), 1);
+      hud.setPockets(scraps.pockets.length, upgrades().pockets);
+      sfx.pick();
+      say(p, { pube: "mmm. strands.", crumb: "crunchy. thank you.", fly: "*deep sniff*" }[kind] || "thanks.");
+      album.onGive(p);
+      return;
+    }
+    sfx.grunt();
+    progress.add("talks");
+    say(p, album.onTalk(p) ?? story.talk(p));
+  }
 
   function nearest(list, extra = 0) {
     let best = null, bestD = Infinity;
@@ -39,10 +66,19 @@ export function createInteractions({ world, player, hud, story, pus, scraps }) {
     flying.push({ e, from: { x: e.x, g: e.g, lift: e.lift }, to, t: 0, dur, arc, done });
   }
 
+  // Pops within 1.8 s of each other chain into a combo that multiplies
+  // every glob: x2 at 3, x3 at 5, x5 at 8.
   function pop(zit) {
-    sfx.bubble(0.6 + zit.h);
-    hud.burst("POP!", zit);
-    pus.burst(zit);
+    combo = comboT > 0 ? combo + 1 : 1;
+    comboT = 1.8;
+    const mult = combo >= 8 ? 5 : combo >= 5 ? 3 : combo >= 3 ? 2 : 1;
+    sfx.bubble(0.6 + zit.h, combo);
+    hud.burst(mult > 1 ? `x${mult} COMBO!` : "POP!", zit);
+    if (combo >= 5) stage.shake(0.12 + Math.min(combo, 12) * 0.02);
+    progress.add("pops");
+    progress.max("maxCombo", combo);
+    pus.burst(zit, mult);
+    album.onPop(zit);
     popPimple(zit);
     squash(zit, 1.2);
   }
@@ -53,6 +89,7 @@ export function createInteractions({ world, player, hud, story, pus, scraps }) {
     player.lunge = 0.25;
     sfx.swat();
     scraps.swat(f);
+    progress.add("flies");
   }
 
   function slap() {
@@ -77,6 +114,7 @@ export function createInteractions({ world, player, hud, story, pus, scraps }) {
     squash(target, 1);
     hud.burst("SLAP!", target);
     say(target, story.slap(target));
+    album.onSlap(target);
   }
 
   function water() {
@@ -85,7 +123,7 @@ export function createInteractions({ world, player, hud, story, pus, scraps }) {
       return;
     }
     can--;
-    hud.setCan(can, CAN_SIZE);
+    hud.setCan(can, canSize());
     sfx.splash();
     const target = nearest([...world.people, ...world.items], 1);
     const to = target
@@ -104,6 +142,7 @@ export function createInteractions({ world, player, hud, story, pus, scraps }) {
       setTimeout(() => {
         squash(target, 0.5);
         say(target, story.water(target));
+        album.onWater(target);
       }, 450);
     }
   }
@@ -112,7 +151,7 @@ export function createInteractions({ world, player, hud, story, pus, scraps }) {
   function feedPockets() {
     const toad = story.toad;
     const items = scraps.takeAll();
-    hud.setPockets(0);
+    hud.setPockets(0, upgrades().pockets);
     items.forEach((kind, i) => {
       const e = makeEntity(scraps.picture(kind), kind === "fly" ? 0.8 : 0.6, player.x, player.g, { shadow: false, kind: "food" });
       e.lift = player.top * 0.7;
@@ -169,8 +208,7 @@ export function createInteractions({ world, player, hud, story, pus, scraps }) {
 
     const person = nearest(world.people, 0.5);
     if (person) {
-      sfx.grunt();
-      say(person, story.talk(person));
+      talkTo(person);
       return;
     }
 
@@ -226,8 +264,7 @@ export function createInteractions({ world, player, hud, story, pus, scraps }) {
     if (w.act === "grab") { grab(); return; }
     if (w.act === "talk") {
       if (e === story.toad) { grab(); return; }
-      sfx.grunt();
-      say(e, story.talk(e));
+      talkTo(e);
     }
   }
 
@@ -242,8 +279,26 @@ export function createInteractions({ world, player, hud, story, pus, scraps }) {
     goTo(e.x, e.g);
   }
 
-  // Turns a pending walk into movement input; real input cancels it.
+  // Press and hold: the character follows the held point until you let go.
+  let hold = null;
+  function holdAt(x, g, mark) {
+    hold = { x, g };
+    walkTo = null;
+    if (mark) world.tapMark = { x, g, t: 0.35 };
+  }
+  function release() { hold = null; }
+
+  // Turns a held point or pending walk into movement input; real input
+  // cancels both.
   function steer(input, dt) {
+    if (hold) {
+      if (input.moving) { hold = null; return input; }
+      const dx = hold.x - player.x, dg = hold.g - player.g;
+      const d = Math.hypot(dx, dg * DEPTH);
+      if (d < 0.25) return input;
+      const len = Math.hypot(dx, dg * 2) || 1;
+      return { ...input, x: dx / len, z: (dg * 2) / len, moving: true, run: d > 6 };
+    }
     if (!walkTo) return input;
     if (input.moving) { walkTo = null; return input; }
     const w = walkTo, e = w.target;
@@ -268,14 +323,18 @@ export function createInteractions({ world, player, hud, story, pus, scraps }) {
   return {
     get carrying() { return carrying; },
     tap,
+    holdAt,
+    release,
     steer,
 
     update(input, dt) {
-      const got = collectDrips(world, player, CAN_SIZE - can);
+      comboT -= dt;
+      const got = collectDrips(world, player, canSize() - can);
       if (got) {
         can += got;
-        hud.setCan(can, CAN_SIZE);
+        hud.setCan(can, canSize());
         sfx.drip();
+        if (isNight()) progress.add("nightDrops", got);
       }
 
       if (input.slap) slap();
@@ -292,7 +351,8 @@ export function createInteractions({ world, player, hud, story, pus, scraps }) {
       const prompt = carrying
         ? (nearToad() && story.edible(carrying) ? "FEED TOAD" : "DROP")
         : nearToad() && scraps.pockets.length ? `FEED TOAD (${scraps.pockets.length})`
-        : nearest(world.items) ? "GRAB" : nearest(world.people, 0.5) ? "TALK"
+        : nearest(world.items) ? "GRAB"
+        : nearest(world.people, 0.5) ? (nearest(world.people, 0.5).id === "mirror" ? "SHOP" : giftFor(nearest(world.people, 0.5)) ? "GIVE" : "TALK")
         : scraps.swatTarget(REACH - 0.6) ? "SWAT" : nearestZit() ? "POP" : "";
       hud.setPrompt(prompt);
     },

@@ -20,7 +20,30 @@ const MUTTER_ALONE = 30;        // seconds before the same person mutters again
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 
-export function createLife({ world, player, hud, story, scraps }) {
+export function createLife({ world, player, hud, story, scraps, isNight = () => false }) {
+  // Red Eye only comes out at night, somewhere near you.
+  const redeye = world.byId.redeye;
+  function nightOwl() {
+    if (!redeye) return;
+    const night = isNight();
+    if (night && !redeye.out) {
+      const lo = Math.max(AREA.minX + 2, -AREA.gateX + 1.5 - (world.gates.west.open ? 40 : 0));
+      const hi = Math.min(AREA.maxX - 2, AREA.gateX - 1.5 + (world.gates.east.open ? 40 : 0));
+      for (let i = 0; i < 30; i++) {
+        const x = Math.max(lo, Math.min(hi, player.x + (Math.random() < 0.5 ? -1 : 1) * rand(5, 11)));
+        const g = rand(1, AREA.front - 1);
+        if (world.people.every((p) => p === redeye || Math.hypot(p.x - x, (p.g - g) * DEPTH) > p.radius + 2)) {
+          Object.assign(redeye, { x, g, home: [x, g], out: true, visible: true, scale: 1 });
+          squash(redeye, 1.5);
+          break;
+        }
+      }
+    } else if (!night && redeye.out) {
+      Object.assign(redeye, { out: false, visible: false, x: 9999 });
+    }
+  }
+  if (redeye) Object.assign(redeye, { out: false, visible: false, x: 9999 });
+
   const toad = story.toad;
   const dripImg = world.drips[0].img;
   let mutterIn = rand(4, 7);
@@ -123,6 +146,7 @@ export function createLife({ world, player, hud, story, scraps }) {
 
   return {
     update(dt, t, input) {
+      nightOwl();
       for (const p of world.people) {
         p.breath = Math.sin(t * (p === toad ? 1.1 : 1.7) + p.phase) * (p === toad ? 0.045 : 0.018);
         const near = floorDist(player, p) < 5.5;

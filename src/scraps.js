@@ -2,7 +2,7 @@
 // over, and house flies that buzz about (swat them, then pick them up).
 // Everything goes in your pockets until you feed it to Toad. Eaten scraps
 // turn up again somewhere in the same zone after a while.
-import { AREA, DEPTH, POCKETS } from "./config.js";
+import { AREA, DEPTH } from "./config.js";
 import { crumbTexture, flyTexture, pubeTexture, rng } from "./ink.js";
 import { floorDist, makeEntity, squash } from "./world.js";
 import { sfx } from "./sfx.js";
@@ -16,7 +16,7 @@ const PER_ZONE = { crumb: 9, pube: 7, fly: 3 };
 const RESPAWN = [35, 70];
 const PICK_RADIUS = 1;
 
-export function createScraps({ world, player, hud }) {
+export function createScraps({ world, player, hud, progress, upgrades }) {
   const rand = rng(4242);
   const img = {
     crumb: Array.from({ length: 4 }, (_, i) => crumbTexture(600 + i)),
@@ -67,8 +67,14 @@ export function createScraps({ world, player, hud }) {
       f.lift = 1.1 + Math.sin(f.t * 3.1) * 0.5;
       f.rot = Math.sin(f.t * 5) * 0.15;
       if (Math.sin(f.t * 0.37) > 0.985) { f.state = "landing"; }
-      // Flies scatter when you run at them.
-      if (floorDist(player, f) < 1.6 && player.walk > 0) f.home = [f.x + (f.x - player.x) * 0.8, f.g];
+      // Fly bait (from the shop) draws them in; otherwise they scatter
+      // when you run at them.
+      if (upgrades().bait && floorDist(player, f) < 12) {
+        f.home[0] += (player.x - f.home[0]) * dt * 0.35;
+        f.home[1] += (player.g - f.home[1]) * dt * 0.35;
+      } else if (floorDist(player, f) < 1.6 && player.walk > 0) {
+        f.home = [f.x + (f.x - player.x) * 0.8, f.g];
+      }
     } else if (f.state === "landing") {
       f.lift = Math.max(0, f.lift - dt * 2.5);
       f.rot = 0;
@@ -129,7 +135,8 @@ export function createScraps({ world, player, hud }) {
         // Pick up: crumbs, hairs and dead flies on the ground.
         const ground = s.kind !== "fly" || (s.dead && s.lift === 0);
         if (ground && floorDist(player, s) < PICK_RADIUS) {
-          if (pockets.length >= POCKETS) {
+          const max = upgrades().pockets;
+          if (pockets.length >= max) {
             if (!s.warned) { hud.toast("Your pockets are full. Go feed Toad."); s.warned = true; }
             continue;
           }
@@ -139,7 +146,9 @@ export function createScraps({ world, player, hud }) {
           s.visible = false;
           s.respawn = RESPAWN[0] + Math.random() * (RESPAWN[1] - RESPAWN[0]);
           sfx.pick();
-          hud.setPockets(pockets.length, POCKETS);
+          hud.setPockets(pockets.length, max);
+          hud.floatText("+1", player, "#fbe5a6");
+          progress.add({ pube: "hairs", crumb: "crumbs", fly: "fliesPocketed" }[s.kind]);
         }
       }
     },

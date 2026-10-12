@@ -11,7 +11,12 @@ import { createPus } from "./pus.js";
 import { createScraps } from "./scraps.js";
 import { createLife } from "./life.js";
 import { CYCLE_SECONDS, START_PHASE } from "./daynight.js";
-import { AREA, POCKETS } from "./config.js";
+import { AREA } from "./config.js";
+import { createProgress } from "./progress.js";
+import { upgrades } from "./shop.js";
+import { createAlbum } from "./album.js";
+import { cravingFor } from "./story.js";
+import { createMenus } from "./ui/menus.js";
 import { updateGates } from "./gates.js";
 import { eyeballTexture } from "./ink.js";
 import { sfx, unlock } from "./sfx.js";
@@ -57,11 +62,17 @@ async function boot() {
   img.blob = img[BLOB];
   img.moon = img[MOON];
 
+  const progress = createProgress();
+  const gift = progress.visit();
+  const ups = () => upgrades(progress);
+
   const stage = createStage(document.getElementById("gameCanvas"));
   const world = buildWorld(img);
   world.clock = START_PHASE;
+  const isNight = () => world.clock > 0.53 && world.clock < 0.95;
   const player = createPlayer(img[PLAYER.sprite]);
   const hud = createHud(stage);
+
   // When a hair wall evaporates, the camera swings over to show the
   // opening, a sign points the way, then it comes back to you.
   let peek = null;
@@ -69,54 +80,114 @@ async function boot() {
     peek = { x: gate.x, g: 4, t: 2.6 };
     hud.sign(gate.x, 4.5, 2.4, gate.x < 0 ? `\u2190 ${stage.zone}` : `${stage.zone} \u2192`, 9);
   };
-  const story = createStory({ world, hud, img, eyeballImg: eyeballTexture(), onOpen });
-  const pus = createPus({ world, player, hud });
-  const scraps = createScraps({ world, player, hud });
-  const verbs = createInteractions({ world, player, hud, story, pus, scraps });
-  const life = createLife({ world, player, hud, story, scraps });
-  hud.setPockets(0, POCKETS);
+  const album = createAlbum({ progress, hud, world, player, isNight });
+  const story = createStory({
+    world, hud, img, eyeballImg: eyeballTexture(), onOpen,
+    onEvent: album.onEvent, progress, craving: cravingFor(progress.today()),
+  });
+  const pus = createPus({ world, player, hud, progress, upgrades: ups, stage });
+  const scraps = createScraps({ world, player, hud, progress, upgrades: ups });
+
+  let running = false, paused = false;
+  const applyShop = () => {
+    const u = ups();
+    player.cosmetics = u.cosmetics;
+    player.speedMul = u.speed;
+    hud.setPockets(scraps.pockets.length, u.pockets);
+  };
+  const menus = createMenus({ progress, hud, img, setPaused: (v) => (paused = v), onShopChange: applyShop });
+  const verbs = createInteractions({
+    world, player, hud, story, pus, scraps, album, progress, upgrades: ups, stage, isNight, openShop: menus.openShop,
+  });
+  const life = createLife({ world, player, hud, story, scraps, isNight });
+  applyShop();
+
+  progress.on((type, a) => {
+    if (type !== "achievement") return;
+    hud.banner("ACHIEVEMENT", a.name, a.text);
+    sfx.chime();
+  });
 
   window.addEventListener("resize", stage.resize);
   stage.resize();
   initControls();
-  // Tap/click the stage: small things first (pimples, scraps, items),
-  // then characters, else open ground.
-  document.getElementById("gameCanvas").addEventListener("pointerdown", (e) => {
-    if (!running) return;
+
+  // Touch/click the stage. Press and hold: the character follows your
+  // finger. A quick tap: walk to whatever you tapped and use it (small
+  // things first: pimples, scraps, items; then characters; else ground).
+  const canvas = document.getElementById("gameCanvas");
+  let press = null;
+  const floorAt = (e) => {
+    const p = stage.toWorld(e.clientX, e.clientY);
+    return [p.x, Math.max(0.4, Math.min(AREA.front, p.g))];
+  };
+  canvas.addEventListener("pointerdown", (e) => {
+    if (!running || paused) return;
     e.preventDefault();
+    try { canvas.setPointerCapture(e.pointerId); } catch {}
     const small = [
       ...world.pimples.filter((p) => p.kind === "pimple"),
       ...world.scraps.filter((s) => !s.gone),
       ...world.items.filter((i) => !i.carried && !i.eaten),
     ];
-    const hit = stage.hit(small, e.clientX, e.clientY, 16) || stage.hit(world.people, e.clientX, e.clientY, 0);
-    const p = stage.toWorld(e.clientX, e.clientY);
-    verbs.tap(hit, p.x, Math.max(0.4, Math.min(AREA.front, p.g)));
+    const hit = stage.hit(small, e.clientX, e.clientY, 16) || stage.hit(world.people.filter((p) => p.visible), e.clientX, e.clientY, 0);
+    press = { id: e.pointerId, t: performance.now(), x: e.clientX, y: e.clientY, hit, moved: false };
+    verbs.holdAt(...floorAt(e), true);
+  });
+  canvas.addEventListener("pointermove", (e) => {
+    if (!press || e.pointerId !== press.id) return;
+    if (Math.hypot(e.clientX - press.x, e.clientY - press.y) > 14) press.moved = true;
+    verbs.holdAt(...floorAt(e), false);
+  });
+  const endPress = (e) => {
+    if (!press || e.pointerId !== press.id) return;
+    verbs.release();
+    if (!press.moved && performance.now() - press.t < 260) verbs.tap(press.hit, ...floorAt(e));
+    press = null;
+  };
+  canvas.addEventListener("pointerup", endPress);
+  canvas.addEventListener("pointercancel", endPress);
+
+  // Escape or P pauses (the menu closes itself on Escape).
+  window.addEventListener("keydown", (e) => {
+    if (!running || menus.isOpen) return;
+    if (e.key === "Escape" || e.key.toLowerCase() === "p") menus.openPause();
   });
 
-  if (new URLSearchParams(location.search).has("debug")) window.game = { player, world, story, pus, stage, scraps };
+  if (new URLSearchParams(location.search).has("debug")) {
+    window.game = { player, world, story, pus, stage, scraps, progress, album, menus, verbs };
+  }
 
   let last = performance.now();
-  let running = false;
   let lastInput = { moving: false, x: 0 };
+  let zone = "";
   function tick(now) {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
     const t = now / 1000;
+    const live = running && !paused;
 
-    if (running) {
+    if (live) {
       const input = verbs.steer(poll(), dt);
       lastInput = input;
-      updatePlayer(player, input, dt, world.people, world.gates);
+      updatePlayer(player, input, dt, world.people.filter((p) => p.visible), world.gates);
       verbs.update(input, dt);
       pus.update(dt);
       scraps.update(dt, t);
       story.update(dt, player);
+      album.update();
       sfx.buzz(Math.max(0, 1 - scraps.nearestFly() / 7));
+      const z = player.x < -AREA.gateX ? "west" : player.x > AREA.gateX ? "east" : "hub";
+      if (z !== zone) { zone = z; sfx.zone(z); }
+      world.clock = (world.clock + dt / CYCLE_SECONDS) % 1;
+    } else {
+      sfx.buzz(0);
     }
     updateGates(world.gates, dt);
-    animateWorld(world, t, dt);
-    life.update(dt, t, running ? lastInput : { moving: false, x: 0 });
+    if (!paused) {
+      animateWorld(world, t, dt);
+      life.update(dt, t, live ? lastInput : { moving: false, x: 0 });
+    }
     if (peek) {
       peek.t -= dt;
       stage.follow(peek, dt);
@@ -124,7 +195,7 @@ async function boot() {
     } else {
       stage.follow(player, dt);
     }
-    if (running) world.clock = (world.clock + dt / CYCLE_SECONDS) % 1;
+    stage.applyShake(dt);
     stage.draw(world, player, verbs.carrying, t);
     hud.update(dt);
     requestAnimationFrame(tick);
@@ -134,7 +205,7 @@ async function boot() {
   requestAnimationFrame(tick);
 
   const startOverlay = document.getElementById("startOverlay");
-  pressStart.textContent = "▶ PRESS START";
+  pressStart.textContent = "\u25B6 PRESS START";
   pressStart.disabled = false;
   pressStart.addEventListener("click", () => {
     unlock();
@@ -144,6 +215,8 @@ async function boot() {
     startOverlay.classList.add("hidden");
     story.start();
     running = true;
+    hud.setPus(progress.pus, false);
+    if (gift) setTimeout(() => hud.banner("WELCOME BACK", `Toad left you ${gift} pus`, `day ${progress.stat("days")} on the skin`), 900);
   }, { once: true });
 
   document.getElementById("endKeep").addEventListener("click", () => {

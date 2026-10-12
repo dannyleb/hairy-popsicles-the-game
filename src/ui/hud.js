@@ -14,6 +14,21 @@ export function createHud(stage) {
     pinned.push({ el, target, life, age: 0, lift, rise });
   }
 
+  const bannerQueue = [];
+  function nextBanner() {
+    if (!bannerQueue.length) return;
+    const [kicker, title, sub] = bannerQueue[0];
+    const el = $("banner");
+    el.querySelector(".bKick").textContent = kicker;
+    el.querySelector(".bTitle").textContent = title;
+    el.querySelector(".bSub").textContent = sub;
+    el.classList.add("show");
+    setTimeout(() => {
+      el.classList.remove("show");
+      setTimeout(() => { bannerQueue.shift(); nextBanner(); }, 350);
+    }, 2600);
+  }
+
   return {
     setObjective(title, sub) {
       objTitle.textContent = title;
@@ -86,6 +101,22 @@ export function createHud(stage) {
       el.textContent = text;
       el.style.setProperty("--tilt", `${(Math.random() - 0.5) * 24}deg`);
       pin(el, target, 0.8, -1.3, 50);
+    },
+
+    // Small text that floats up off something ("+1", "2/3", "x2").
+    floatText(text, target, color = "#fbe5a6") {
+      const el = document.createElement("div");
+      el.className = "floatText";
+      el.textContent = text;
+      el.style.color = color;
+      pin(el, target, 0.9, 0.2, 55);
+    },
+
+    // A banner that slides down from the top: achievements, album pages,
+    // curios. Queued so they never pile on top of each other.
+    banner(kicker, title, sub = "") {
+      bannerQueue.push([kicker, title, sub]);
+      if (bannerQueue.length === 1) nextBanner();
     },
 
     showEnd() {
