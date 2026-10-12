@@ -31,6 +31,17 @@ export function createHud(stage) {
       canEl.innerHTML = Array.from({ length: max }, (_, i) => `<i class="${i < n ? "full" : ""}"></i>`).join("");
     },
 
+    setPus(n, bump) {
+      const el = $("pusCount");
+      el.textContent = n;
+      if (bump) {
+        const wrap = $("pusWrap");
+        wrap.classList.remove("bump");
+        void wrap.offsetWidth;
+        wrap.classList.add("bump");
+      }
+    },
+
     setPrompt(text) {
       if (promptEl.textContent !== text) promptEl.textContent = text;
       promptEl.classList.toggle("show", !!text);

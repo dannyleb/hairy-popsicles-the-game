@@ -1,6 +1,7 @@
 import { AREA, DEPTH, PLAYER, SPAWN } from "./config.js";
 import { makeEntity } from "./world.js";
 import { walkableX } from "./gates.js";
+import { sfx } from "./sfx.js";
 
 export function createPlayer(img) {
   return { ...makeEntity(img, PLAYER.height, SPAWN.x, SPAWN.g, { kind: "player", radius: PLAYER.radius }), walk: 0, lunge: 0 };
@@ -13,7 +14,9 @@ export function updatePlayer(player, input, dt, people, gates) {
     const speed = input.run ? PLAYER.runSpeed : PLAYER.speed;
     player.x += input.x * speed * dt;
     player.g += input.z * speed * PLAYER.depthSpeed * dt;
+    const before = Math.floor(player.walk / Math.PI);
     player.walk += dt * (input.run ? 16 : 11);
+    if (Math.floor(player.walk / Math.PI) !== before) sfx.squish(input.run);
   } else {
     player.walk = 0;
   }

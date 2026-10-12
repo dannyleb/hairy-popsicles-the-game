@@ -7,6 +7,7 @@ import { createStage } from "./stage.js";
 import { createHud } from "./ui/hud.js";
 import { createStory } from "./story.js";
 import { createInteractions } from "./interact.js";
+import { createPus } from "./pus.js";
 import { updateGates } from "./gates.js";
 import { eyeballTexture } from "./ink.js";
 import { unlock } from "./sfx.js";
@@ -37,13 +38,14 @@ async function boot() {
   const player = createPlayer(img[PLAYER.sprite]);
   const hud = createHud(stage);
   const story = createStory({ world, hud, img, eyeballImg: eyeballTexture() });
-  const verbs = createInteractions({ world, player, hud, story });
+  const pus = createPus({ world, player, hud });
+  const verbs = createInteractions({ world, player, hud, story, pus });
 
   window.addEventListener("resize", stage.resize);
   stage.resize();
   initControls();
 
-  if (new URLSearchParams(location.search).has("debug")) window.game = { player, world, story };
+  if (new URLSearchParams(location.search).has("debug")) window.game = { player, world, story, pus };
 
   let last = performance.now();
   let running = false;
@@ -56,6 +58,7 @@ async function boot() {
       const input = poll();
       updatePlayer(player, input, dt, world.people, world.gates);
       verbs.update(input, dt);
+      pus.update(dt);
       story.update(dt, player);
     }
     updateGates(world.gates, dt);

@@ -16,12 +16,14 @@ framework, no server code, deployed to GitHub Pages like
   patches, pores, creases and stray hairs, split by a thick ink horizon.
   The camera scrolls left and right; you can also walk into and out of the
   floor, and things further back are painted behind.
-- **Swollen pimples everywhere**, random sizes: domes on the floor (slap
-  one to pop it) and round ones on the wall.
+- **Swollen pimples everywhere**, random sizes: domes on the floor and
+  round ones on the wall.
 - **Flat 2D illustration.** The scanned drawings are processed into solid
   colors, solid ink lines and one consistent thick dark outline
-  (`tools/stylize.mjs`); no pencil texture survives. Everything the game
-  draws itself (`src/ink.js`) uses the same rules.
+  (`tools/stylize.mjs`); no pencil texture survives. Their colors are
+  pulled toward the world's skin palette and outlines are a warm
+  maroon-black, so the cast sits in the same world as the ground.
+  Everything the game draws itself (`src/ink.js`) uses the same rules.
 - **Floating heads are popsicles**, planted on wooden sticks and swaying.
 
 ## Tech stack
@@ -67,6 +69,12 @@ next hedge wither:
 2. **West.** Roast is too dry to eat. Water him until he's juicy. Feed him.
 3. **East.** Slap Big Eye's loose eye out. Feed it to Toad. He's full. For now.
 
+**Pus points.** Slap a floor pimple to pop it (bubble-pop sound). Pus
+globs spray out; walk over them to slurp them up. Each glob is one pus
+point, shown top-left and saved in the browser (`localStorage`), to be
+spent on something later. Popped pimples swell back up after 40-75 s.
+Walking on the skin squelches.
+
 All names and dialogue are placeholders. `?debug` in the URL exposes
 `window.game` (player, world, story) for testing.
 
@@ -84,7 +92,8 @@ src/gates.js         hair hedges: page edges and the two zone gates
 src/ink.js           everything drawn at runtime: skin tiles, pimples, stick, shadow, hair, drip, eyeball
 src/player.js        movement, zone bounds, collisions, waddle and slap lunge
 src/controls.js      keyboard, D-pad and verb buttons
-src/sfx.js           procedural sound: slap, splash, gulp, burp, pop, splort
+src/pus.js           pus globs, pus points (saved), pimple regrowth
+src/sfx.js           procedural sound: slap, splash, gulp, burp, bubble pop, squish, bloop
 src/ui/hud.js        objective, can meter, verb prompt, speech bubbles, bursts, end card
 public/              index.html, style.css
 assets/              scans and processed sprites (see assets/README.md)

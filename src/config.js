@@ -1,7 +1,7 @@
 export const GAME_TITLE = "Hairy Popsicles";
 
 export const PAPER = "#f5f6ec";
-export const INK = "#1b1a17";
+export const INK = "#2e1616";
 
 // Flat 2D stage, side-on. Units are "world units" (a character is ~2-5
 // tall). x runs left-right across the page; g is depth on the floor, from

@@ -117,6 +117,29 @@ export const sfx = {
     const f = 90 + Math.random() * 120;
     tone("sawtooth", f, f * 0.7, 0.18, 0.2);
   },
+  // A wet bubble popping: a fast upward pitch blip with a click, then a
+  // small low blub.
+  bubble(size = 1) {
+    if (!ready()) return;
+    const f = 520 / Math.sqrt(size);
+    tone("sine", f, f * 3.2, 0.045, 0.55);
+    burst(4200, 1.2, 0.025, 0.5, "highpass");
+    tone("sine", f * 0.45, f * 0.25, 0.12, 0.35, 0.04);
+  },
+  // Slurping up a glob of pus; the pitch climbs during a streak.
+  bloop(streak = 0) {
+    if (!ready()) return;
+    const f = 380 * Math.pow(1.06, Math.min(streak, 24));
+    tone("sine", f, f * 1.7, 0.07, 0.3);
+  },
+  // One squelchy footstep on skin.
+  squish(run = false) {
+    if (!ready()) return;
+    const v = run ? 0.32 : 0.22;
+    burst(380 + Math.random() * 380, 5 + Math.random() * 4, 0.1 + Math.random() * 0.05, v, "bandpass");
+    tone("sine", 140 + Math.random() * 50, 55, 0.11, v * 0.8);
+    if (Math.random() < 0.35) tone("sine", 900 + Math.random() * 500, 1500, 0.03, 0.06, 0.06);
+  },
   rustle() {
     if (!ready()) return;
     burst(4000, 0.5, 1.2, 0.25, "highpass");

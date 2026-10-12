@@ -9,10 +9,12 @@
 //      average color.
 //   3. Merge any small leftover blobs into the color around them.
 //   4. Dark, colorless pen lines from the original become solid ink.
-//   5. Grow the silhouette and fill the ring with ink: a uniform outline.
+//   5. Pull the colors toward the world's skin palette (with a shared warm
+//      grade) so the cast sits in the same world as the ground.
+//   6. Grow the silhouette and fill the ring with ink: a uniform outline.
 import sharp from "sharp";
 
-const INK = [27, 26, 23];
+const INK = [46, 22, 22]; // warm maroon-black, same as src/config.js INK
 
 export const STYLE = {
   colors: 7,          // flat colors per drawing (max)
@@ -21,14 +23,37 @@ export const STYLE = {
   inkLum: 118,        // pen lines: darker than this...
   inkChroma: 60,      // ...and no more colorful than this (max-min of RGB)
   inkHard: 62,        // anything darker than this is ink regardless of color
-  outline: 7,         // px, outline thickness outside the silhouette
+  outline: 7,         // px, minimum outline thickness outside the silhouette
+  outlineFrac: 0.024, // ...scaled to this share of the drawing's height
   inset: 2,           // px, outline also eats this far into the edge
   minRegion: 0.004,   // color blobs smaller than this share of the drawing get merged...
   keepDist: 20,       // ...unless their color is at least this different
   detail: 10,         // chroma jump that marks a small spot worth keeping
   fleck: 500,         // px: colored bits smaller than this (not pen dots) are dropped
   saturate: 1.1,
+  harmonize: 0.42,    // pull skin-like colors this far toward the world palette
+  harmonizeFar: 0.14, // ...and every other color this far
+  warm: [1, 0.965, 0.9], // shared warm grade so nothing reads cold against skin
 };
+
+// The world's own colors (skin floor and wall, pimples, pus): see src/ink.js.
+const WORLD = [
+  [238, 177, 150], [237, 167, 154], [236, 189, 141], [231, 166, 140], [241, 188, 162],
+  [239, 205, 160], [236, 210, 154], [217, 99, 106], [238, 154, 146], [245, 227, 161],
+];
+const PALE = [246, 220, 196]; // whites and creams become pale skin
+
+function harmonize(c, style) {
+  let best = WORLD[0], bd = Infinity;
+  for (const a of WORLD) {
+    const d = (c[0] - a[0]) ** 2 + (c[1] - a[1]) ** 2 + (c[2] - a[2]) ** 2;
+    if (d < bd) { bd = d; best = a; }
+  }
+  const mix = (x, y, t) => x.map((v, i) => v + (y[i] - v) * t);
+  let out = mix(c, best, Math.sqrt(bd) < 75 ? style.harmonize : style.harmonizeFar);
+  if (lum(...out) > 222) out = mix(out, PALE, 0.55);
+  return out.map((v, i) => Math.max(0, Math.min(255, Math.round(v * style.warm[i]))));
+}
 
 const lum = (r, g, b) => 0.299 * r + 0.587 * g + 0.114 * b;
 
@@ -166,8 +191,11 @@ function mergeSmall(lab, fill, w, h, minArea, centers, keepDist) {
   }
 }
 
+export const outlineFor = (h, style = STYLE) => Math.max(style.outline, Math.round(h * style.outlineFrac));
+
 export async function stylize(rgba, w, h, style = STYLE) {
   const n = w * h;
+  const outline = outlineFor(h, style);
   const alpha = new Uint8Array(n);
   const rgb = Buffer.alloc(n * 3);
   for (let i = 0; i < n; i++) {
@@ -238,14 +266,14 @@ export async function stylize(rgba, w, h, style = STYLE) {
   const palette = acc.map(([r, g, b, c]) => {
     if (!c) return INK;
     const m = (r + g + b) / (3 * c);
-    return [r, g, b].map((v) => Math.max(0, Math.min(255, Math.round(m + (v / c - m) * style.saturate))));
+    return harmonize([r, g, b].map((v) => Math.max(0, Math.min(255, Math.round(m + (v / c - m) * style.saturate)))), style);
   });
 
   const out = Buffer.alloc(n * 4);
   for (let i = 0; i < n; i++) {
     let c = null;
     if (alpha[i]) c = ink[i] || inside[i] <= style.inset || lab[i] < 0 ? INK : palette[lab[i]];
-    else if (outside[i] <= style.outline) c = INK;
+    else if (outside[i] <= outline) c = INK;
     if (c) { const o = i * 4; out[o] = c[0]; out[o + 1] = c[1]; out[o + 2] = c[2]; out[o + 3] = 255; }
   }
   return out;

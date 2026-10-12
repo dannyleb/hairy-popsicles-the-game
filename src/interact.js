@@ -9,7 +9,7 @@ import { sfx } from "./sfx.js";
 
 const SPRAY = dripTexture();
 
-export function createInteractions({ world, player, hud, story }) {
+export function createInteractions({ world, player, hud, story, pus }) {
   let carrying = null;
   let can = 0;
   const flying = [];
@@ -37,16 +37,19 @@ export function createInteractions({ world, player, hud, story }) {
   }
 
   function slap() {
-    const target = nearest([...world.people, ...world.items]);
     player.lunge = 0.25;
-    if (!target) {
-      const zit = nearest(world.pimples.filter((p) => p.kind === "pimple"), -1);
-      if (zit) {
-        sfx.splort();
-        hud.burst("POP!", zit);
-        popPimple(zit);
-        squash(zit, 1.2);
-      }
+    // Characters and items win unless a pimple is clearly closer.
+    const who = nearest([...world.people, ...world.items]);
+    const zit = nearest(world.pimples.filter((p) => p.kind === "pimple"));
+    const gap = (e) => floorDist(player, e) - e.radius;
+    const target = zit && (!who || gap(zit) < gap(who) - 0.6) ? zit : who;
+    if (!target) return;
+    if (target.kind === "pimple") {
+      sfx.bubble(0.6 + target.h);
+      hud.burst("POP!", target);
+      pus.burst(target);
+      popPimple(target);
+      squash(target, 1.2);
       return;
     }
     sfx.slap();

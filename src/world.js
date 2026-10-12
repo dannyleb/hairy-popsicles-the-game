@@ -51,7 +51,7 @@ function pimples(people) {
   const side = Array.from({ length: 8 }, (_, i) => pimpleTexture(100 + i));
   const face = Array.from({ length: 6 }, (_, i) => pimpleTexture(200 + i, { faceOn: true }));
   const popped = Array.from({ length: 4 }, (_, i) => poppedTexture(300 + i));
-  const blocked = [...people.map((p) => [p.x, p.g, p.radius + 1.6]), ...DRIP_SPOTS.map(([x, g]) => [x, g, 1.2]), [0, 6.7, 2]];
+  const blocked = [...people.map((p) => [p.x, p.g, p.radius + 3.4]), ...DRIP_SPOTS.map(([x, g]) => [x, g, 1.2]), [0, 6.7, 2]];
   const floor = [];
   for (let tries = 0; floor.length < 46 && tries < 2000; tries++) {
     const x = AREA.minX + rand() * (AREA.maxX - AREA.minX);
@@ -71,6 +71,7 @@ function pimples(people) {
 }
 
 export function popPimple(p) {
+  p.orig = { img: p.img, h: p.h, w: p.w, top: p.top };
   p.kind = "popped";
   p.img = p.popped;
   p.h = p.h * 0.6 + 0.15;
@@ -126,6 +127,7 @@ export function animateWorld(world, t, dt) {
   }
   for (const it of world.items) wobble(it);
   for (const p of world.pimples) wobble(p);
+  for (const g of world.globs || []) wobble(g);
   for (const d of world.drips) {
     if (d.respawn > 0) {
       d.respawn -= dt;

@@ -10,7 +10,7 @@
 // trimmed transparent WebP to assets/sprites/<name>.webp, <name>-2.webp, ...
 // (largest first).
 import sharp from "sharp";
-import { distance, stylize, STYLE } from "./stylize.mjs";
+import { distance, outlineFor, stylize } from "./stylize.mjs";
 import { mkdirSync, readdirSync, rmSync } from "node:fs";
 import { basename, extname, join } from "node:path";
 
@@ -232,7 +232,7 @@ function trimGroundLine(img, fg, label, piece) {
 
 async function exportPiece(img, fg, label, piece, outFile) {
   const { data, w } = img;
-  const pad = STYLE.outline + 3;
+  const pad = outlineFor(piece.y1 - piece.y0) + 3;
   const x0 = Math.max(0, piece.x0 - pad), y0 = Math.max(0, piece.y0 - pad);
   const x1 = Math.min(w - 1, piece.x1 + pad), y1 = Math.min(img.h - 1, piece.y1 + pad);
   const cw = x1 - x0 + 1, chh = y1 - y0 + 1;

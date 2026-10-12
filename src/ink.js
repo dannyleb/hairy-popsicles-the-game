@@ -127,9 +127,9 @@ export function pimpleTexture(seed, { faceOn = false } = {}) {
   const rand = rng(seed);
   const W = 220, H = faceOn ? 220 : 190;
   const [c, ctx] = canvas(W, H);
-  const cx = W / 2, by = faceOn ? H / 2 : H - 14;
-  const rw = 90 + rand() * 10, rh = faceOn ? rw * (0.8 + rand() * 0.2) : 24;
-  ctx.lineWidth = OUTLINE;
+  const cx = W / 2, by = faceOn ? H / 2 : H - 16;
+  const rw = 88 + rand() * 10, rh = faceOn ? rw * (0.8 + rand() * 0.2) : 24;
+  ctx.lineWidth = OUTLINE + 3;
   ctx.strokeStyle = INK;
   // Inflamed ring.
   blob(ctx, cx, by, rw, rh, rand, 11, 0.12);
@@ -168,11 +168,36 @@ export function pimpleTexture(seed, { faceOn = false } = {}) {
   blob(ctx, hx, hy, hr, hr * 0.9, rand, 8, 0.12);
   ctx.fillStyle = "#f5e3a1";
   ctx.fill();
-  ctx.lineWidth = OUTLINE * 0.7;
+  ctx.lineWidth = OUTLINE;
   ctx.stroke();
   ctx.fillStyle = "#fffbe8";
   ctx.beginPath();
   ctx.ellipse(hx - hr * 0.3, hy - hr * 0.3, hr * 0.28, hr * 0.18, -0.6, 0, Math.PI * 2);
+  ctx.fill();
+  return c;
+}
+
+// A glob of pus: what flies out of a popped pimple, worth one point.
+export function pusGlobTexture(seed) {
+  const rand = rng(seed);
+  const [c, ctx] = canvas(96, 96);
+  blob(ctx, 48, 52, 36, 30, rand, 8, 0.2);
+  ctx.fillStyle = "#f2dc8a";
+  ctx.fill();
+  ctx.save();
+  ctx.clip();
+  ctx.fillStyle = "#e3bf5e";
+  ctx.beginPath();
+  ctx.ellipse(58, 70, 30, 16, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  blob(ctx, 48, 52, 36, 30, rng(seed), 8, 0.2);
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = INK;
+  ctx.stroke();
+  ctx.fillStyle = "#fffbe8";
+  ctx.beginPath();
+  ctx.ellipse(36, 40, 9, 6, -0.6, 0, Math.PI * 2);
   ctx.fill();
   return c;
 }
@@ -209,7 +234,7 @@ export function stickTexture() {
   ctx.fill();
   ctx.fillStyle = "#e9c48e";
   ctx.fillRect(14, 0, 10, 470);
-  ctx.lineWidth = OUTLINE;
+  ctx.lineWidth = OUTLINE * 1.6;
   ctx.strokeStyle = INK;
   path();
   ctx.stroke();

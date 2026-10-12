@@ -146,6 +146,7 @@ export function createStage(canvas) {
     list.push([player.g, () => drawEntity(player)]);
     if (carried) list.push([player.g + 0.001, () => drawEntity(carried)]);
     for (const e of world.fx) list.push([e.g + 0.002, () => drawEntity(e)]);
+    for (const e of world.globs) list.push([e.g + 0.001, () => drawEntity(e)]);
     list.sort((a, b) => a[0] - b[0]);
     for (const [, fn] of list) fn();
   }
