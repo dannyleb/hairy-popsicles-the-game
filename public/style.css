@@ -190,3 +190,4 @@ html, body {
   .controlsGrid { margin: 4px 0 8px; font-size: 14px; }
   .fine { margin-top: 8px !important; }
 }
+.popTip { flex-basis: 100%; text-align: center; }

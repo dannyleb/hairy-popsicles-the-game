@@ -44,8 +44,13 @@ async function boot() {
   window.addEventListener("resize", stage.resize);
   stage.resize();
   initControls();
+  document.getElementById("gameCanvas").addEventListener("pointerdown", (e) => {
+    if (!running) return;
+    const zit = stage.hit(world.pimples.filter((p) => p.kind === "pimple"), e.clientX, e.clientY);
+    if (zit) verbs.tapPimple(zit);
+  });
 
-  if (new URLSearchParams(location.search).has("debug")) window.game = { player, world, story, pus };
+  if (new URLSearchParams(location.search).has("debug")) window.game = { player, world, story, pus, stage };
 
   let last = performance.now();
   let running = false;
@@ -55,7 +60,7 @@ async function boot() {
     const t = now / 1000;
 
     if (running) {
-      const input = poll();
+      const input = verbs.steer(poll());
       updatePlayer(player, input, dt, world.people, world.gates);
       verbs.update(input, dt);
       pus.update(dt);

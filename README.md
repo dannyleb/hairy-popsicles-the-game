@@ -69,7 +69,8 @@ next hedge wither:
 2. **West.** Roast is too dry to eat. Water him until he's juicy. Feed him.
 3. **East.** Slap Big Eye's loose eye out. Feed it to Toad. He's full. For now.
 
-**Pus points.** Slap a floor pimple to pop it (bubble-pop sound). Pus
+**Pus points.** Pop a floor pimple by tapping/clicking it (you walk over),
+or by walking up to it and pressing E or Space (bubble-pop sound). Pus
 globs spray out; walk over them to slurp them up. Each glob is one pus
 point, shown top-left and saved in the browser (`localStorage`), to be
 spent on something later. Popped pimples swell back up after 40-75 s.

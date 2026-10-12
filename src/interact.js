@@ -1,6 +1,7 @@
 // The three verbs, Good Time Garden style:
-//   Slap  (Space)  whack whoever is nearest
-//   Grab  (E)      pick up / drop / feed Toad / talk
+//   Slap  (Space)  whack whoever is nearest, or pop a pimple
+//   Tap/click a pimple to walk over and pop it
+//   Grab  (E)      pick up / drop / feed Toad / talk / pop a pimple
 //   Water (Q)      splash from your can (refill by walking into drips)
 import { CAN_SIZE, REACH } from "./config.js";
 import { collectDrips, floorDist, makeEntity, popPimple, squash } from "./world.js";
@@ -36,6 +37,16 @@ export function createInteractions({ world, player, hud, story, pus }) {
     flying.push({ e, from: { x: e.x, g: e.g, lift: e.lift }, to, t: 0, dur, arc, done });
   }
 
+  function pop(zit) {
+    sfx.bubble(0.6 + zit.h);
+    hud.burst("POP!", zit);
+    pus.burst(zit);
+    popPimple(zit);
+    squash(zit, 1.2);
+  }
+
+  const nearestZit = () => nearest(world.pimples.filter((p) => p.kind === "pimple"));
+
   function slap() {
     player.lunge = 0.25;
     // Characters and items win unless a pimple is clearly closer.
@@ -45,11 +56,7 @@ export function createInteractions({ world, player, hud, story, pus }) {
     const target = zit && (!who || gap(zit) < gap(who) - 0.6) ? zit : who;
     if (!target) return;
     if (target.kind === "pimple") {
-      sfx.bubble(0.6 + target.h);
-      hud.burst("POP!", target);
-      pus.burst(target);
-      popPimple(target);
-      squash(target, 1.2);
+      pop(target);
       return;
     }
     sfx.slap();
@@ -126,6 +133,13 @@ export function createInteractions({ world, player, hud, story, pus }) {
     if (person) {
       sfx.grunt();
       say(person, story.talk(person));
+      return;
+    }
+
+    const zit = nearestZit();
+    if (zit) {
+      player.lunge = 0.25;
+      pop(zit);
     }
   }
 
@@ -145,8 +159,33 @@ export function createInteractions({ world, player, hud, story, pus }) {
     }
   }
 
+  // Tap/click a pimple: walk over to it and pop it.
+  let walkTo = null;
+  function tapPimple(zit) {
+    if (zit.kind !== "pimple") return;
+    if (floorDist(player, zit) - zit.radius < 1.4) pop(zit);
+    else walkTo = zit;
+  }
+
+  // Steers the player toward a tapped pimple; any real input cancels it.
+  function steer(input) {
+    if (!walkTo) return input;
+    if (input.moving || walkTo.kind !== "pimple") { walkTo = null; return input; }
+    const dx = walkTo.x - 0.7 - player.x, dg = walkTo.g + 0.15 - player.g;
+    if (Math.abs(dx) < 0.35 && Math.abs(dg) < 0.25) {
+      const z = walkTo;
+      walkTo = null;
+      pop(z);
+      return input;
+    }
+    const len = Math.hypot(dx, dg * 2) || 1;
+    return { ...input, x: dx / len, z: (dg * 2) / len, moving: true };
+  }
+
   return {
     get carrying() { return carrying; },
+    tapPimple,
+    steer,
 
     update(input, dt) {
       const got = collectDrips(world, player, CAN_SIZE - can);
@@ -169,7 +208,7 @@ export function createInteractions({ world, player, hud, story, pus }) {
 
       const prompt = carrying
         ? (nearToad() && story.edible(carrying) ? "FEED TOAD" : "DROP")
-        : nearest(world.items) ? "GRAB" : nearest(world.people, 0.5) ? "TALK" : "";
+        : nearest(world.items) ? "GRAB" : nearest(world.people, 0.5) ? "TALK" : nearestZit() ? "POP" : "";
       hud.setPrompt(prompt);
     },
   };

@@ -154,5 +154,15 @@ export function createStage(canvas) {
   return {
     resize, follow, draw,
     toScreen: (x, g, lift) => ({ x: X(x), y: Y(g) - lift * U }),
+    // Frontmost entity whose drawing covers screen point (sx, sy), with a
+    // little slack so small pimples are easy to tap.
+    hit(list, sx, sy, slack = 14) {
+      let best = null;
+      for (const e of list) {
+        const cx = X(e.x), by = Y(e.g), hw = (e.w / 2) * U + slack, ht = e.top * U + slack;
+        if (sx >= cx - hw && sx <= cx + hw && sy <= by + slack && sy >= by - ht && (!best || e.g > best.g)) best = e;
+      }
+      return best;
+    },
   };
 }
