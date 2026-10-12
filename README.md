@@ -94,9 +94,10 @@ src/ink.js           everything drawn at runtime: skin tiles, pimples, stick, sh
 src/player.js        movement, zone bounds, collisions, waddle and slap lunge
 src/controls.js      keyboard, D-pad and verb buttons
 src/pus.js           pus globs, pus points (saved), pimple regrowth
+src/music.js         background music: menu + gameplay loop, mute (saved), tab-hidden pause
 src/sfx.js           procedural sound: slap, splash, gulp, burp, bubble pop, squish, bloop
 src/ui/hud.js        objective, can meter, verb prompt, speech bubbles, bursts, end card
-public/              index.html, style.css
+public/              index.html, style.css, audio/theme.mp3 (background music)
 assets/              scans and processed sprites (see assets/README.md)
 tools/cutout.mjs     paper keying, splitting, sprite export
 tools/stylize.mjs    flat-illustration pass: solid colors, solid ink, thick outline

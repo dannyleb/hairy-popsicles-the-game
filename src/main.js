@@ -11,10 +11,17 @@ import { createPus } from "./pus.js";
 import { updateGates } from "./gates.js";
 import { eyeballTexture } from "./ink.js";
 import { unlock } from "./sfx.js";
+import { createMusic } from "./music.js";
 
 document.title = GAME_TITLE;
 
 const pressStart = document.getElementById("pressStart");
+
+// Menu music starts on the first tap or keypress anywhere.
+const music = createMusic([...document.querySelectorAll(".musicBtn")]);
+const firstGesture = () => music.play();
+window.addEventListener("pointerdown", firstGesture, { once: true });
+window.addEventListener("keydown", firstGesture, { once: true });
 
 function loadImages() {
   const entries = SPRITES.map((s) => [s, `assets/sprites/${s}.webp`]);
@@ -82,6 +89,8 @@ async function boot() {
   pressStart.disabled = false;
   pressStart.addEventListener("click", () => {
     unlock();
+    music.play();
+    music.setMode("game");
     window.scrollTo(0, 0);
     startOverlay.classList.add("hidden");
     story.start();

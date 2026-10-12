@@ -191,3 +191,21 @@ html, body {
   .fine { margin-top: 8px !important; }
 }
 .popTip { flex-basis: 100%; text-align: center; }
+
+.musicBtn {
+  position: relative; width: 40px; height: 40px; padding: 0; cursor: pointer; pointer-events: auto;
+  background: var(--paper); border: 2.5px solid var(--ink); border-radius: 50%;
+  box-shadow: 2px 3px 0 rgba(46, 22, 22, 0.85);
+}
+.musicBtn[hidden] { display: none; }
+.musicBtn::before { content: "\266B"; font-size: 22px; line-height: 34px; color: var(--ink); }
+.musicBtn.off::before { opacity: 0.35; }
+.musicBtn.off::after {
+  content: ""; position: absolute; left: 6px; right: 6px; top: 50%; height: 3px;
+  background: var(--ink); transform: rotate(-40deg); border-radius: 2px;
+}
+#musicGame { position: absolute; top: 60px; right: 16px; }
+#musicMenu { position: absolute; top: 16px; right: 16px; }
+@media (max-width: 520px) {
+  #musicGame { top: 62px; right: 12px; }
+}
