@@ -23,6 +23,8 @@ const HOLE = 8;          // enclosed patches this close to paper color are holes
 const HOLE_SHARE = 0.0008; // ...if bigger than this share of the scan
 const GROUP = 14;       // px: strokes closer than this belong to one drawing
 const MIN_SHARE = 0.02;  // drop pieces smaller than this share of the biggest
+// Scans where figures stand on a drawn ground line; the game draws its own.
+const GROUND_LINES = new Set(["balloon-gang"]);
 
 async function load(file) {
   const { data, info } = await sharp(file)
@@ -148,6 +150,35 @@ function splitDrawings(bg, w, h) {
   };
 }
 
+// Cut off a drawn ground line (and the hatched shadow under it). The line
+// is the row in the bottom half that reaches furthest sideways; cut just
+// above the topmost row that reaches nearly as far.
+function trimGroundLine(img, fg, label, piece) {
+  const { w } = img;
+  const inside = (x, y) => fg[y * w + x] && label[y * w + x] === piece.id;
+  const spans = [];
+  let maxSpan = 0;
+  for (let y = piece.y1; y >= piece.y0 + (piece.y1 - piece.y0) * 0.5; y--) {
+    let a = -1, b = -1;
+    for (let x = piece.x0; x <= piece.x1; x++) if (inside(x, y)) { if (a < 0) a = x; b = x; }
+    const span = a < 0 ? 0 : b - a;
+    spans.push([y, span]);
+    if (span > maxSpan) maxSpan = span;
+  }
+  let lineTop = piece.y1;
+  for (const [y, span] of spans) if (span >= maxSpan * 0.9 && y < lineTop) lineTop = y;
+  const cut = lineTop - 3;
+  const out = { ...piece, x0: w, x1: 0, y0: img.h, y1: 0 };
+  for (let x = piece.x0; x <= piece.x1; x++) {
+    let n = 0, top = -1, bottom = -1;
+    for (let y = piece.y0; y <= cut; y++) if (inside(x, y)) { n++; if (top < 0) top = y; bottom = y; }
+    if (n < 6) continue; // leftover flecks of the line
+    if (x < out.x0) out.x0 = x; if (x > out.x1) out.x1 = x;
+    if (top < out.y0) out.y0 = top; if (bottom > out.y1) out.y1 = bottom;
+  }
+  return out;
+}
+
 async function exportPiece(img, fg, label, piece, outFile) {
   const { data, w } = img;
   const pad = 4;
@@ -193,7 +224,8 @@ for (const f of files) {
   const bg = keyPaper(img, paper);
   const { fg, label, pieces } = splitDrawings(bg, img.w, img.h);
   for (let i = 0; i < pieces.length; i++) {
-    await exportPiece(img, fg, label, pieces[i], join(OUT, i ? `${name}-${i + 1}.webp` : `${name}.webp`));
+    const piece = GROUND_LINES.has(name) ? trimGroundLine(img, fg, label, pieces[i]) : pieces[i];
+    await exportPiece(img, fg, label, piece, join(OUT, i ? `${name}-${i + 1}.webp` : `${name}.webp`));
   }
   console.log(`  ${name}: paper rgb(${paper.join(",")}), ${pieces.length} piece(s)`);
 }

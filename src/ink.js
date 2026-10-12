@@ -133,3 +133,62 @@ export function dripTexture() {
   ctx.stroke();
   return texture(c);
 }
+
+// A popped eyeball: pink, veiny, wet. Drawn in the same marker+pencil style.
+export function eyeballTexture() {
+  const [c, ctx] = canvas(160, 160);
+  ctx.beginPath();
+  ctx.arc(80, 82, 66, 0, Math.PI * 2);
+  ctx.fillStyle = "#f6d9d4";
+  ctx.fill();
+  pencil(ctx, 160, 160, "#e48a8a", 900, 0.45);
+  ctx.strokeStyle = "#c0303a";
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 9; i++) {
+    const a = Math.random() * Math.PI * 2;
+    let x = 80 + Math.cos(a) * 64, y = 82 + Math.sin(a) * 64;
+    ctx.beginPath(); ctx.moveTo(x, y);
+    for (let s = 0; s < 4; s++) {
+      x += (80 - x) * 0.22 + (Math.random() - 0.5) * 12;
+      y += (82 - y) * 0.22 + (Math.random() - 0.5) * 12;
+      ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.arc(96, 74, 26, 0, Math.PI * 2);
+  ctx.fillStyle = "#8a5a7a";
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(96, 74, 12, 0, Math.PI * 2);
+  ctx.fillStyle = INK;
+  ctx.fill();
+  ctx.fillStyle = "#fff";
+  ctx.beginPath(); ctx.arc(101, 68, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath();
+  ctx.arc(80, 82, 66, 0, Math.PI * 2);
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = INK;
+  ctx.stroke();
+  return texture(c);
+}
+
+// A dense clump of hair, for the hedges that wall off unopened areas.
+export function hedgeTexture() {
+  const w = 160, h = 200;
+  const [c, ctx] = canvas(w, h);
+  ctx.strokeStyle = INK;
+  ctx.lineCap = "round";
+  for (let i = 0; i < 26; i++) {
+    const bx = w / 2 + (Math.random() - 0.5) * 70;
+    const len = 90 + Math.random() * 100;
+    const lean = (Math.random() - 0.5) * 120;
+    const curl = (Math.random() - 0.5) * 60;
+    ctx.lineWidth = 1.4 + Math.random() * 1.2;
+    ctx.beginPath();
+    ctx.moveTo(bx, h - 2);
+    ctx.bezierCurveTo(bx + curl, h - len * 0.4, bx + lean * 0.6 - curl, h - len * 0.75, bx + lean, h - len);
+    ctx.stroke();
+  }
+  return texture(c);
+}

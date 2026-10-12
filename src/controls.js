@@ -1,9 +1,21 @@
-// Keyboard + on-screen D-pad merged into one per-frame poll() result.
+// Keyboard + on-screen D-pad and verb buttons, merged into one per-frame
+// poll(): analog movement plus one-shot verb presses.
 const keys = new Set();
 const pad = { up: false, down: false, left: false, right: false };
+const pressed = new Set();
 
-window.addEventListener("keydown", (e) => keys.add(e.key.toLowerCase()));
+const VERB_KEYS = { " ": "slap", e: "grab", q: "water" };
+
+window.addEventListener("keydown", (e) => {
+  const k = e.key.toLowerCase();
+  keys.add(k);
+  if (VERB_KEYS[k]) {
+    e.preventDefault();
+    if (!e.repeat) pressed.add(VERB_KEYS[k]);
+  }
+});
 window.addEventListener("keyup", (e) => keys.delete(e.key.toLowerCase()));
+window.addEventListener("blur", () => keys.clear());
 
 function bindPadButton(el, dir) {
   if (!el) return;
@@ -15,10 +27,10 @@ function bindPadButton(el, dir) {
 }
 
 export function initControls() {
-  bindPadButton(document.querySelector("#dpad .up"), "up");
-  bindPadButton(document.querySelector("#dpad .down"), "down");
-  bindPadButton(document.querySelector("#dpad .left"), "left");
-  bindPadButton(document.querySelector("#dpad .right"), "right");
+  for (const dir of ["up", "down", "left", "right"]) bindPadButton(document.querySelector(`#dpad .${dir}`), dir);
+  for (const el of document.querySelectorAll("[data-verb]")) {
+    el.addEventListener("pointerdown", (e) => { e.preventDefault(); pressed.add(el.dataset.verb); });
+  }
 }
 
 export function poll() {
@@ -36,5 +48,7 @@ export function poll() {
   const len = Math.hypot(x, z);
   if (len > 0) { x /= len; z /= len; }
 
-  return { x, z, moving: len > 0, run };
+  const verbs = { slap: pressed.has("slap"), grab: pressed.has("grab"), water: pressed.has("water") };
+  pressed.clear();
+  return { x, z, moving: len > 0, run, ...verbs };
 }

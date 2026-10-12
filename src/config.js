@@ -9,6 +9,13 @@ export const WORLD = { bounds: 120, fogNear: 22, fogFar: 72, tufts: 700, tileSiz
 
 export const SPAWN = { player: { x: 0, z: 6 } };
 
+// Walkable area. The hub is open from the start; hair hedges at x = ±16
+// wall off the west and east zones until Toad has eaten enough.
+export const AREA = { minX: -47, maxX: 47, minZ: -31, maxZ: 13, hedgeX: 16 };
+
+export const CAN_SIZE = 5;
+export const REACH = 2.6;
+
 export const PLAYER = { speed: 7, runSpeed: 12, radius: 0.6, sprite: "antenna", height: 2.7 };
 
 // Fixed three-quarter camera (no orbit): billboards always face it, the way

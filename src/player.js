@@ -1,15 +1,16 @@
-import { PLAYER, SPAWN, WORLD } from "./config.js";
+import { AREA, PLAYER, SPAWN } from "./config.js";
 import { createCutout } from "./cutout.js";
+import { walkableX } from "./gates.js";
 
 export function createPlayer(tex) {
   const cut = createCutout(tex, PLAYER.height);
   cut.root.position.set(SPAWN.player.x, 0, SPAWN.player.z);
-  return { ...cut, walk: 0 };
+  return { ...cut, walk: 0, lunge: 0 };
 }
 
 // Screen-relative movement: up on the stick/keys walks into the page.
-// The paper-puppet walk is a waddle and a hop.
-export function updatePlayer(player, input, dt, people) {
+// The paper-puppet walk is a waddle and a hop; a slap is a quick lunge.
+export function updatePlayer(player, input, dt, people, gates) {
   const pos = player.root.position;
   if (input.moving) {
     const speed = input.run ? PLAYER.runSpeed : PLAYER.speed;
@@ -29,10 +30,15 @@ export function updatePlayer(player, input, dt, people) {
     }
   }
 
-  const b = WORLD.bounds * 0.9;
-  pos.x = Math.max(-b, Math.min(b, pos.x));
-  pos.z = Math.max(-b, Math.min(b, pos.z));
+  const [minX, maxX] = walkableX(gates, PLAYER.radius);
+  pos.x = Math.max(minX, Math.min(maxX, pos.x));
+  pos.z = Math.max(AREA.minZ, Math.min(AREA.maxZ, pos.z));
 
-  player.pivot.rotation.z = input.moving ? Math.sin(player.walk) * 0.12 : 0;
+  let tilt = input.moving ? Math.sin(player.walk) * 0.12 : 0;
+  if (player.lunge > 0) {
+    player.lunge = Math.max(0, player.lunge - dt);
+    tilt += Math.sin((player.lunge / 0.25) * Math.PI) * -0.45;
+  }
+  player.pivot.rotation.z = tilt;
   player.pivot.position.y = input.moving ? Math.abs(Math.sin(player.walk)) * 0.18 : 0;
 }

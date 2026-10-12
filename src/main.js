@@ -1,12 +1,16 @@
 import * as THREE from "three";
 import { CAMERA, GAME_TITLE, PLAYER } from "./config.js";
-import { SPRITES } from "./roster.js";
+import { BLOB, SPRITES } from "./roster.js";
 import { initControls, poll } from "./controls.js";
 import { animateWorld, buildWorld } from "./world.js";
 import { createPlayer, updatePlayer } from "./player.js";
 import { updateCamera } from "./camera.js";
 import { createHud } from "./ui/hud.js";
-import { createMissionRunner } from "./missions/index.js";
+import { createStory } from "./story.js";
+import { createInteractions } from "./interact.js";
+import { updateGates } from "./gates.js";
+import { eyeballTexture } from "./ink.js";
+import { unlock } from "./sfx.js";
 
 document.title = GAME_TITLE;
 
@@ -36,12 +40,14 @@ function loadTextures() {
 
 async function boot() {
   const tex = await loadTextures();
+  tex.blob = tex[BLOB];
   const world = buildWorld(scene, camera, tex);
   const player = createPlayer(tex[PLAYER.sprite]);
   scene.add(player.root);
 
-  const hud = createHud();
-  const missions = createMissionRunner(hud);
+  const hud = createHud(camera);
+  const story = createStory({ world, hud, tex, eyeballTex: eyeballTexture() });
+  const verbs = createInteractions({ world, player, hud, story });
 
   function resize() {
     const w = window.innerWidth, h = window.innerHeight;
@@ -55,16 +61,7 @@ async function boot() {
 
   initControls();
 
-  const pickupRadius = 1.1;
-  function checkPickups() {
-    const p = player.root.position;
-    for (const drip of [...world.pickups.children]) {
-      if (Math.hypot(p.x - drip.position.x, p.z - drip.position.z) < pickupRadius) {
-        world.pickups.remove(drip);
-        missions.onPickupCollected();
-      }
-    }
-  }
+  if (new URLSearchParams(location.search).has("debug")) window.game = { player, world, story };
 
   let last = performance.now();
   let running = false;
@@ -74,11 +71,15 @@ async function boot() {
     const t = now / 1000;
 
     if (running) {
-      updatePlayer(player, poll(), dt, world.people);
-      checkPickups();
+      const input = poll();
+      updatePlayer(player, input, dt, world.people, world.gates);
+      verbs.update(input, dt);
+      story.update(dt, player.root.position);
     }
+    updateGates(world.gates, dt);
     updateCamera(camera, player.root.position, dt);
-    animateWorld(world, t);
+    animateWorld(world, t, dt);
+    hud.update(dt);
 
     renderer.render(scene, camera);
     requestAnimationFrame(tick);
@@ -91,10 +92,15 @@ async function boot() {
   pressStart.textContent = "▶ PRESS START";
   pressStart.disabled = false;
   pressStart.addEventListener("click", () => {
+    unlock();
     startOverlay.classList.add("hidden");
-    missions.start();
+    story.start();
     running = true;
   }, { once: true });
+
+  document.getElementById("endKeep").addEventListener("click", () => {
+    document.getElementById("endCard").classList.remove("show");
+  });
 }
 
 boot();

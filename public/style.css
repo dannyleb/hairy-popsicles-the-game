@@ -28,10 +28,84 @@ html, body {
   display: flex; justify-content: center; padding: 12px 16px;
   pointer-events: none;
 }
-#objective { padding: 6px 18px 8px; text-align: center; min-width: 200px; transform: rotate(-1deg); }
-.objLabel { font-size: 13px; letter-spacing: 0.12em; opacity: 0.6; }
+#objective { padding: 6px 18px 8px; text-align: center; min-width: 200px; max-width: min(440px, 64vw); transform: rotate(-1deg); }
 #objTitle { font-size: 22px; line-height: 1.1; }
-#objSub { font-size: 16px; color: var(--drip); }
+#objSub { font-size: 16px; color: var(--drip); line-height: 1.15; }
+
+#canWrap {
+  position: absolute; top: 14px; right: 16px; display: flex; align-items: center; gap: 6px;
+  font-size: 15px; letter-spacing: 0.08em;
+}
+#can { display: flex; gap: 3px; }
+#can i {
+  width: 13px; height: 18px; display: block; border: 2px solid var(--ink);
+  border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; transform: rotate(180deg);
+  background: var(--paper);
+}
+#can i.full { background: var(--drip); }
+@media (max-width: 520px) {
+  #topbar { justify-content: flex-start; }
+  #canWrap { position: fixed; top: auto; bottom: 186px; right: 22px; flex-direction: column; gap: 2px; }
+  #can { flex-direction: column-reverse; }
+}
+
+#worldLayer { position: absolute; inset: 0; pointer-events: none; z-index: 4; overflow: hidden; }
+.bubble, .burst { position: absolute; left: 0; top: 0; white-space: nowrap; will-change: transform; }
+.bubble {
+  background: var(--paper); border: 2.5px solid var(--ink); padding: 3px 12px 5px;
+  font-size: 19px; border-radius: 18px 14px 18px 12px / 14px 18px 12px 18px;
+  box-shadow: 2px 3px 0 rgba(27, 26, 23, 0.8);
+}
+.bubble::after {
+  content: ""; position: absolute; left: 50%; bottom: -11px; width: 14px; height: 14px;
+  background: var(--paper); border-right: 2.5px solid var(--ink); border-bottom: 2.5px solid var(--ink);
+  transform: translateX(-50%) rotate(45deg) skew(10deg, 10deg);
+}
+.burst {
+  font-family: "Rubik Wet Paint", "Patrick Hand", cursive; font-size: 34px; color: var(--flesh);
+  -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 2px 3px 0 var(--drip);
+  rotate: var(--tilt);
+}
+
+#verbPrompt {
+  position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%);
+  font-size: 20px; padding: 4px 16px; z-index: 5; pointer-events: none;
+  background: var(--paper); border: 2.5px solid var(--ink); border-radius: 12px 6px 12px 5px;
+  opacity: 0; transition: opacity 0.15s;
+}
+#verbPrompt.show { opacity: 1; }
+#verbPrompt::before { content: "E"; font-size: 13px; border: 2px solid var(--ink); border-radius: 5px; padding: 0 5px; margin-right: 8px; vertical-align: 2px; }
+
+#verbs { position: absolute; right: 16px; bottom: 24px; display: none; flex-direction: column; gap: 10px; z-index: 5; }
+.verb {
+  font: inherit; font-size: 20px; width: 104px; padding: 8px 0; color: var(--ink); touch-action: none;
+  border: 2.5px solid var(--ink); border-radius: 14px 6px 12px 5px / 6px 12px 5px 14px;
+  box-shadow: 3px 4px 0 rgba(27, 26, 23, 0.85); display: flex; flex-direction: column; align-items: center; line-height: 1;
+}
+.verb .keycap { font-size: 11px; opacity: 0.55; margin-bottom: 2px; }
+.verb.slap { background: var(--flesh); }
+.verb.grab { background: var(--paper); }
+.verb.water { background: #a9c6ee; }
+.verb:active { transform: translate(2px, 3px); box-shadow: 1px 1px 0 var(--ink); }
+@media (pointer: coarse) {
+  #verbs { display: flex; }
+  #verbPrompt { bottom: auto; top: 92px; }
+  #verbPrompt::before { display: none; }
+  .verb .keycap { display: none; }
+}
+
+#endCard {
+  position: absolute; inset: 0; z-index: 8; display: flex; align-items: center; justify-content: center;
+  background: rgba(245, 246, 236, 0.75); opacity: 0; pointer-events: none; transition: opacity 0.6s;
+}
+#endCard.show { opacity: 1; pointer-events: auto; }
+.endInner { text-align: center; }
+.endInner h2 {
+  font-family: "Rubik Wet Paint", "Patrick Hand", cursive; font-weight: 400; margin: 0;
+  font-size: clamp(40px, 10vw, 72px); color: var(--flesh);
+  -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 3px 4px 0 var(--drip);
+}
+.endInner p { font-size: 24px; margin: 4px 0 18px; }
 
 #toast {
   position: absolute; top: 96px; left: 50%; transform: translate(-50%, -8px) rotate(1deg);
@@ -76,7 +150,7 @@ html, body {
 .lineup img:nth-child(5) { height: 90%; animation-delay: -2.4s; }
 @keyframes sway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
 
-.controlsGrid { display: flex; gap: 28px; justify-content: center; margin: 14px 0 18px; font-size: 17px; text-align: left; }
+.controlsGrid { display: flex; flex-wrap: wrap; gap: 10px 28px; justify-content: center; margin: 14px 0 18px; font-size: 17px; text-align: left; }
 .chunk {
   font: inherit; font-size: 24px; padding: 8px 30px; cursor: pointer; color: var(--ink);
   background: var(--flesh); transition: transform 0.1s;

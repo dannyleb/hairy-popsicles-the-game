@@ -1,8 +1,10 @@
 # Hairy Popsicles
 
-A browser-based 3D free-roam game built with Three.js, where every
-character is a hand-drawn ink-and-colored-pencil drawing cut out of the
-page. Fully static site, no framework, no server code; same stack and
+A browser-based 3D game built with Three.js, where every character is a
+hand-drawn ink-and-colored-pencil drawing cut out of the page. Design
+inspiration: [The Good Time Garden](https://store.steampowered.com/app/1200860/The_Good_Time_Garden/)
+by Coal Supper: a short, gross, surreal garden where you slap, water and
+carry things to feed a friend who's always hungry. Fully static site, no framework, no server code; same stack and
 layout as [Eagle Lake: Green Dog Run](https://github.com/dannyleb/eagle-lake-3d).
 
 ## Art direction
@@ -46,26 +48,44 @@ npm run sprites   # re-cut sprites from assets/concept/ (see assets/README.md)
 Edits to `public/` or `assets/` need a dev server restart. `dist/` is
 generated and not committed.
 
-## Current gameplay
+## How it plays
 
-- Walk the page (WASD / arrows, Shift to run, D-pad on touch).
-- You play Antenna; the other 22 characters from the drawings stand around the field.
-- One mission: mop up 12 blue drips.
+Toad sits in his corner of the page, starving. Three verbs:
+
+| Verb | Keyboard | Touch | Does |
+|---|---|---|---|
+| Slap | Space | SLAP | Whack whoever is nearest |
+| Grab | E | GRAB | Pick up / drop / feed Toad / talk |
+| Water | Q | WATER | Splash from your can; walk into blue drips to refill it |
+
+Walk with WASD / arrows (Shift to run) or the D-pad. The page is split
+into three zones walled by hedges of hair; each meal Toad eats makes the
+next hedge wither:
+
+1. **Hub.** Slap Pimples until what's growing in him pops out. Feed it to Toad.
+2. **West.** Roast is too dry to eat. Water him until he's juicy. Feed him.
+3. **East.** Slap Big Eye's loose eye out. Feed it to Toad. He's full. For now.
+
+All names and dialogue are placeholders. `?debug` in the URL exposes
+`window.game` (player, world, story) for testing.
 
 ## Project structure
 
 ```
 src/main.js          texture loading, game loop, start screen wiring
 src/config.js        world, player, camera, paper/ink colors
-src/roster.js        every character: sprite, size, stick or not, position
+src/roster.js        every character: sprite, size, stick, position, lines; drip spots
+src/story.js         the puzzle chain: what slapping/watering/feeding does to whom
+src/interact.js      the verbs: slap, grab/give/talk, water; carrying; spray and feeding arcs
+src/gates.js         hair hedges: page edges and the two zone gates
 src/cutout.js        a drawing standing in the world (art + stick + shadow)
-src/ink.js           runtime-drawn props: stick, hatched shadow, hair tufts, drip
-src/world.js         paper ground, fog, tufts, cast, drips, moon
-src/player.js        player movement, collisions, paper-puppet waddle
+src/ink.js           runtime-drawn props: stick, hatched shadow, hair, drip, eyeball
+src/world.js         paper ground, fog, cast, items, drips, moon, squash-and-stretch
+src/player.js        movement, zone bounds, collisions, waddle and slap lunge
 src/camera.js        fixed three-quarter follow camera
-src/controls.js      keyboard + on-screen D-pad input
-src/missions/        data-driven missions
-src/ui/hud.js        objective card + toast
+src/controls.js      keyboard, D-pad and verb buttons
+src/sfx.js           procedural sound: slap, splash, gulp, burp, pop, splort
+src/ui/hud.js        objective, can meter, verb prompt, speech bubbles, bursts, end card
 public/              index.html, style.css
 assets/              scans, sprites, paper texture (see assets/README.md)
 tools/cutout.mjs     paper keying + sprite export

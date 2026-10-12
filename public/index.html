@@ -16,18 +16,32 @@
   <div id="app">
     <header id="topbar">
       <div id="objective">
-        <div class="objLabel">OBJECTIVE</div>
         <div id="objTitle">&mdash;</div>
         <div id="objSub"></div>
       </div>
+      <div id="canWrap" aria-label="Watering can"><span class="canLbl">CAN</span><span id="can"></span></div>
     </header>
 
     <main id="viewport">
       <canvas id="gameCanvas"></canvas>
+      <div id="worldLayer"></div>
       <div id="toast"></div>
+      <div id="verbPrompt"></div>
       <div id="dpad" aria-label="Direction pad">
         <div class="arrow up"></div><div class="arrow right"></div><div class="arrow down"></div><div class="arrow left"></div>
         <div class="hub"></div>
+      </div>
+      <div id="verbs">
+        <button class="verb slap" data-verb="slap"><span class="keycap">SPACE</span>SLAP</button>
+        <button class="verb grab" data-verb="grab"><span class="keycap">E</span>GRAB</button>
+        <button class="verb water" data-verb="water"><span class="keycap">Q</span>WATER</button>
+      </div>
+      <div id="endCard" role="dialog" aria-label="The end">
+        <div class="endInner">
+          <h2>Toad is full.</h2>
+          <p>For now.</p>
+          <button id="endKeep" class="chunk">keep wandering</button>
+        </div>
       </div>
     </main>
   </div>
@@ -42,10 +56,10 @@
         <img src="assets/sprites/screamer.webp" alt="" />
       </div>
       <h1>Hairy Popsicles</h1>
-      <p>Everyone's melting. Wander the page.</p>
+      <p>Toad is hungry. He's always hungry.</p>
       <div class="controlsGrid">
-        <div><strong>Keyboard</strong><br/>WASD / arrows &mdash; walk<br/>Shift &mdash; run</div>
-        <div><strong>Touch</strong><br/>D-pad &mdash; walk</div>
+        <div><strong>Keyboard</strong><br/>WASD / arrows &mdash; walk &middot; Shift &mdash; run<br/>Space &mdash; slap<br/>E &mdash; grab / give / talk<br/>Q &mdash; water</div>
+        <div><strong>Touch</strong><br/>D-pad &mdash; walk<br/>SLAP &middot; GRAB &middot; WATER buttons</div>
       </div>
       <button id="pressStart" class="chunk" disabled>LOADING&hellip;</button>
       <p class="fine"><span id="buildTag">dev build</span> &middot; all art hand-drawn</p>
