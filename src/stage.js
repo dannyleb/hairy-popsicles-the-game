@@ -2,7 +2,8 @@
 // yellowing skin wall behind, a flushed peach skin floor in front, split by
 // a wobbly ink horizon; everything on the floor is painted back-to-front.
 import { AREA, INK, VIEW } from "./config.js";
-import { FLOOR_SKIN, WALL_SKIN, hedgeTexture, rng, shadowTexture, skinTile, stickTexture } from "./ink.js";
+import { FLOOR_SKIN, WALL_SKIN, hedgeTexture, pimpleTexture, rng, shadowTexture, skinTile, stickTexture } from "./ink.js";
+import { environment } from "./daynight.js";
 import { gateAlpha, gateScale } from "./gates.js";
 
 const SHADOW = shadowTexture();
@@ -18,10 +19,10 @@ function makeHills() {
   const rand = rng(77);
   const pts = [];
   const span = 140;
-  let h = 1.5;
+  let h = 1.2;
   for (let x = -span; x <= span; x += 0.8) {
     h += (rand() - 0.5) * 0.7;
-    h = Math.max(0.6, Math.min(3.2, h * 0.94 + 1.6 * 0.06));
+    h = Math.max(0.5, Math.min(2.4, h * 0.94 + 1.2 * 0.06));
     pts.push([x, h]);
   }
   const hairs = [];
@@ -44,7 +45,37 @@ function makeForeground() {
 }
 
 export function createStage(canvas) {
-  const ctx = canvas.getContext("2d");
+  // Two passes per frame: the sky (wall, stars, sun/moon) straight onto the
+  // screen, the world (everything else) onto `worldCanvas`, which is tinted
+  // for the time of day and laid over the sky. `ctx` points at whichever
+  // pass is being drawn.
+  const screen = canvas.getContext("2d");
+  const worldCanvas = document.createElement("canvas");
+  const wctx = worldCanvas.getContext("2d");
+  const tintCanvas = document.createElement("canvas");
+  const tctx = tintCanvas.getContext("2d");
+  let ctx = screen;
+  const sun = pimpleTexture(999, { faceOn: true });
+  const stars = Array.from({ length: 80 }, (_, i) => {
+    const r = rng(1000 + i);
+    return { x: r(), y: r(), s: 1.2 + r() * 2.2, tw: r() * 6, cross: r() < 0.15 };
+  });
+  const motes = Array.from({ length: 26 }, (_, i) => {
+    const r = rng(2000 + i);
+    return { x: r() * 40 - 20, g: 0.5 + r() * 7.5, h: 0.4 + r() * 2.5, a: r() * 6, b: r() * 6, sp: 0.4 + r() * 0.6 };
+  });
+  const mote = (() => {
+    const c = document.createElement("canvas");
+    c.width = c.height = 32;
+    const m = c.getContext("2d");
+    const gr = m.createRadialGradient(16, 16, 0, 16, 16, 16);
+    gr.addColorStop(0, "rgba(255, 246, 190, 1)");
+    gr.addColorStop(0.3, "rgba(245, 220, 120, 0.8)");
+    gr.addColorStop(1, "rgba(245, 200, 90, 0)");
+    m.fillStyle = gr;
+    m.fillRect(0, 0, 32, 32);
+    return c;
+  })();
   const floorTile = skinTile(FLOOR_SKIN);
   const hills = makeHills();
   const fore = makeForeground();
@@ -59,13 +90,15 @@ export function createStage(canvas) {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     W = window.innerWidth;
     H = window.innerHeight;
-    canvas.width = Math.round(W * dpr);
-    canvas.height = Math.round(H * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.imageSmoothingQuality = "high";
+    for (const [c, x] of [[canvas, screen], [worldCanvas, wctx], [tintCanvas, tctx]]) {
+      c.width = Math.round(W * dpr);
+      c.height = Math.round(H * dpr);
+      x.setTransform(dpr, 0, 0, dpr, 0, 0);
+      x.imageSmoothingQuality = "high";
+    }
     U = Math.min(H / VIEW.height, W / VIEW.minWidth);
-    floorPat = ctx.createPattern(floorTile, "repeat");
-    wallPat = ctx.createPattern(wallTile, "repeat");
+    floorPat = wctx.createPattern(floorTile, "repeat");
+    wallPat = screen.createPattern(wallTile, "repeat");
   }
 
   const X = (x) => (x - cam.x) * U + W / 2;
@@ -135,29 +168,99 @@ export function createStage(canvas) {
     }
   }
 
-  function draw(world, player, carried) {
+  // Multiply `tint` ([css color, strength]) over the drawn pixels of src.
+  function tintOver(src, tint) {
+    if (tint[1] < 0.01) return;
+    tctx.save();
+    tctx.setTransform(1, 0, 0, 1, 0, 0);
+    tctx.globalCompositeOperation = "copy";
+    tctx.drawImage(src, 0, 0);
+    tctx.globalCompositeOperation = "source-atop";
+    tctx.fillStyle = tint[0];
+    tctx.fillRect(0, 0, tintCanvas.width, tintCanvas.height);
+    tctx.restore();
+    screen.save();
+    screen.setTransform(1, 0, 0, 1, 0, 0);
+    screen.globalCompositeOperation = "multiply";
+    screen.globalAlpha = tint[1];
+    screen.drawImage(tintCanvas, 0, 0);
+    screen.restore();
+  }
+
+  function draw(world, player, carried, time = 0) {
     // Screen x for a layer scrolling at `k` times the ground's speed.
     const PX = (x, k) => (x - cam.x * k) * U + W / 2;
     const tileScale = TILE_UNITS * U / floorTile.width;
+    const env = environment(world.clock ?? 0.1);
 
-    // Far skin wall (sky), scrolling slowly.
+    // ----- Sky pass, straight onto the screen -----
+    ctx = screen;
     const hy = Y(0);
     wallPat.setTransform(new DOMMatrix().translate(-cam.x * PARALLAX.wall * U + W / 2, -cam.g * PARALLAX.wall * U + H / 2).scale(tileScale));
     ctx.fillStyle = wallPat;
     ctx.fillRect(0, 0, W, Math.max(0, hy));
-
-    // The moon, barely moving.
-    if (world.moon) {
-      const mh = 2.6 * U, mw = mh * world.moon.width / world.moon.height;
-      ctx.drawImage(world.moon, W * 0.08 - cam.x * U * PARALLAX.moon, Y(-5.6) - mh / 2, mw, mh);
-    }
-
     // Pimples swelling out of the wall.
     for (const p of world.wallPimples) {
       const s = p.size * U, sx = PX(p.x, PARALLAX.wallPimples);
       if (sx + s < 0 || sx - s > W) continue;
       ctx.drawImage(p.img, sx - s / 2, Y(p.y) - s / 2, s, s);
     }
+
+    if (env.sky[1] > 0.01) {
+      ctx.save();
+      ctx.globalCompositeOperation = "multiply";
+      ctx.globalAlpha = env.sky[1];
+      ctx.fillStyle = env.sky[0];
+      ctx.fillRect(0, 0, W, Math.max(0, hy));
+      ctx.restore();
+    }
+
+    // Stars.
+    if (env.stars > 0.02) {
+      ctx.fillStyle = "#fff6e6";
+      ctx.strokeStyle = "#fff6e6";
+      ctx.lineWidth = 1.5;
+      for (const st of stars) {
+        const sx = ((st.x * W * 1.6 - cam.x * U * 0.04) % (W * 1.6) + W * 1.6) % (W * 1.6) - W * 0.3;
+        const sy = st.y * hy * 0.92;
+        ctx.globalAlpha = env.stars * (0.55 + 0.45 * Math.sin(time * 2 + st.tw));
+        if (st.cross) {
+          ctx.beginPath();
+          ctx.moveTo(sx - st.s * 2, sy); ctx.lineTo(sx + st.s * 2, sy);
+          ctx.moveTo(sx, sy - st.s * 2); ctx.lineTo(sx, sy + st.s * 2);
+          ctx.stroke();
+        } else {
+          ctx.beginPath();
+          ctx.arc(sx, sy, st.s / 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // Sun (a giant pimple) by day, moon by night, arcing across the sky.
+    const arc = (prog) => {
+      const peak = Math.min(hy * 0.4, Math.max(56, Y(-7)));
+      return [W * (0.06 + 0.88 * prog) - cam.x * U * PARALLAX.moon, hy - Math.sin(prog * Math.PI) * (hy - peak)];
+    };
+    if (env.sun !== null) {
+      const sz = 2.8 * U, [sx, sy] = arc(env.sun);
+      const glow = ctx.createRadialGradient(sx, sy, sz * 0.2, sx, sy, sz * 1.2);
+      glow.addColorStop(0, "rgba(255, 238, 170, 0.85)");
+      glow.addColorStop(1, "rgba(255, 238, 170, 0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(sx - sz * 1.2, sy - sz * 1.2, sz * 2.4, sz * 2.4);
+      ctx.drawImage(sun, sx - sz / 2, sy - sz / 2, sz, sz);
+    }
+    if (env.moon !== null && world.moon) {
+      const mh = 2.2 * U, mw = mh * world.moon.width / world.moon.height, [mx, my] = arc(env.moon);
+      ctx.drawImage(world.moon, mx - mw / 2, my - mh / 2, mw, mh);
+    }
+
+    // ----- World pass, onto worldCanvas -----
+    ctx = wctx;
+    ctx.clearRect(0, 0, W, H);
+
 
     // Distant flesh hills sitting on the horizon.
     ctx.lineJoin = "round";
@@ -254,6 +357,29 @@ export function createStage(canvas) {
       if (f.flip) ctx.scale(-1, 1);
       ctx.drawImage(f.img, -f.w / 2 * U, -f.h * U, f.w * U, f.h * U);
       ctx.restore();
+    }
+
+    // ----- Composite: world over sky, tinted for the time of day -----
+    ctx = screen;
+    screen.save();
+    screen.setTransform(1, 0, 0, 1, 0, 0);
+    screen.drawImage(worldCanvas, 0, 0);
+    screen.restore();
+    tintOver(worldCanvas, env.world);
+
+    // Glowing pus-flies at night.
+    if (env.stars > 0.15) {
+      screen.save();
+      screen.globalCompositeOperation = "lighter";
+      for (const m of motes) {
+        const span = 40;
+        const wx = ((m.x + Math.sin(time * m.sp + m.a) * 1.5 - cam.x) % span + span * 1.5) % span - span / 2 + cam.x;
+        const sx = X(wx), sy = Y(m.g) - (m.h + Math.sin(time * m.sp * 1.7 + m.b) * 0.4) * U;
+        const r = (0.18 + 0.06 * Math.sin(time * 3 + m.a)) * U;
+        screen.globalAlpha = env.stars * (0.6 + 0.4 * Math.sin(time * 2.3 + m.b));
+        screen.drawImage(mote, sx - r, sy - r, r * 2, r * 2);
+      }
+      screen.restore();
     }
   }
 

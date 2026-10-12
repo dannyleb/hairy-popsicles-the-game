@@ -9,6 +9,7 @@ import { createStory } from "./story.js";
 import { createInteractions } from "./interact.js";
 import { createPus } from "./pus.js";
 import { createScraps } from "./scraps.js";
+import { CYCLE_SECONDS, START_PHASE } from "./daynight.js";
 import { AREA, POCKETS } from "./config.js";
 import { updateGates } from "./gates.js";
 import { eyeballTexture } from "./ink.js";
@@ -57,6 +58,7 @@ async function boot() {
 
   const stage = createStage(document.getElementById("gameCanvas"));
   const world = buildWorld(img);
+  world.clock = START_PHASE;
   const player = createPlayer(img[PLAYER.sprite]);
   const hud = createHud(stage);
   // When a hair wall evaporates, the camera swings over to show the
@@ -117,7 +119,8 @@ async function boot() {
     } else {
       stage.follow(player, dt);
     }
-    stage.draw(world, player, verbs.carrying);
+    if (running) world.clock = (world.clock + dt / CYCLE_SECONDS) % 1;
+    stage.draw(world, player, verbs.carrying, t);
     hud.update(dt);
     requestAnimationFrame(tick);
   }

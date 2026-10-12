@@ -20,6 +20,11 @@ framework, no server code, deployed to GitHub Pages like
   (barely moves), skin wall/sky (0.25x), wall pimples (0.4x), distant
   flesh hills with giant hairs (0.6x), the ground and everyone on it (1x),
   foreground hair along the bottom edge (1.35x).
+- **Day and night** (`src/daynight.js`): a 4-minute cycle that runs while
+  you play. Dawn is peachy, dusk orange-red, night deep purple-blue with
+  stars and glowing pus-flies. The sun is a giant pimple; Snoot's crescent
+  is the moon. The ground layer is tinted separately from the sky so the
+  moon and stars stay bright.
 - **Swollen pimples everywhere**, random sizes: domes on the floor and
   round ones on the wall.
 - **Traced 2D illustration.** The scans aren't shown as-is: each one is
@@ -112,6 +117,7 @@ src/config.js        stage size, walkable area, player, colors
 src/roster.js        every character: sprite, size, stick, position, lines; drip spots
 src/story.js         Toad's belly and appetite stages, big meals, who says what
 src/interact.js      the verbs: slap, grab/give/talk, water; carrying; spray and feeding arcs
+src/daynight.js      day/night cycle: sky and world tints, stars, sun/moon timing
 src/stage.js         the 2D renderer: skin wall and floor, horizon, depth-sorted drawing, camera
 src/world.js         entities (cast, items, drips, pimples), squash-and-stretch, sway
 src/gates.js         hair hedges: page edges and the zone gates (evaporate when opened)
