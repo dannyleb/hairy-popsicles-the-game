@@ -61,17 +61,27 @@ Toad sits in his corner of the page, starving. Three verbs:
 
 | Verb | Keyboard | Touch | Does |
 |---|---|---|---|
-| Slap | Space | SLAP | Whack whoever is nearest, or pop a pimple |
-| Grab | E | GRAB | Pick up / drop / feed Toad / talk |
-| Water | Q | WATER | Splash from your can; walk into blue drips to refill it |
+| Slap | Space | SLAP | Whack whoever is nearest, swat a fly, or pop a pimple |
+| Grab | E | GRAB | Feed Toad / pick up / drop / talk |
+| Water | Q | WATER | Splash from your can; walk into blue teardrops to refill it |
 
-Walk with WASD / arrows (Shift to run) or the D-pad. The page is split
-into three zones walled by hedges of hair; each meal Toad eats makes the
-next hedge wither:
+Walk with WASD / arrows (Shift to run) or the D-pad.
 
-1. **Hub.** Slap Pimples until what's growing in him pops out. Feed it to Toad.
-2. **West.** Roast is too dry to eat. Water him until he's juicy. Feed him.
-3. **East.** Slap Big Eye's loose eye out. Feed it to Toad. He's full. For now.
+**Feeding Toad.** Walk over crumbs and curly pubic hairs to pocket them;
+swat house flies out of the air (Space) and pick them up. Pockets hold 12.
+Press E next to Toad to feed him everything you're carrying. Values are in
+`FOOD` in `src/config.js` (crumb/hair 1, fly 3). Scraps respawn in their
+zone after a while. Big meals, carried over by hand:
+
+- Slap Pimples until what's growing in him pops out (5).
+- Roast is too dry; water him until he's juicy (8).
+- Slap Big Eye's loose eye out (10).
+
+**Opening the page.** Fill Toad's belly (meter in the objective card) and
+he's full: he burps, the next hair wall evaporates, the camera shows you
+the opening, and his appetite comes back bigger. `STAGES` in
+`src/config.js`: 15 opens the west, 22 the east, 30 and he's full for good.
+New zones are a new stage entry plus a gate in `src/gates.js`.
 
 **Pus points.** Pop a floor pimple by tapping/clicking it (you walk over),
 or by walking up to it and pressing E or Space (bubble-pop sound). Pus
@@ -89,15 +99,16 @@ All names and dialogue are placeholders. `?debug` in the URL exposes
 src/main.js          image loading, game loop, start screen wiring
 src/config.js        stage size, walkable area, player, colors
 src/roster.js        every character: sprite, size, stick, position, lines; drip spots
-src/story.js         the puzzle chain: what slapping/watering/feeding does to whom
+src/story.js         Toad's belly and appetite stages, big meals, who says what
 src/interact.js      the verbs: slap, grab/give/talk, water; carrying; spray and feeding arcs
 src/stage.js         the 2D renderer: skin wall and floor, horizon, depth-sorted drawing, camera
 src/world.js         entities (cast, items, drips, pimples), squash-and-stretch, sway
-src/gates.js         hair hedges: page edges and the two zone gates
+src/gates.js         hair hedges: page edges and the zone gates (evaporate when opened)
 src/ink.js           everything drawn at runtime: skin tiles, pimples, stick, shadow, hair, drip, eyeball
 src/player.js        movement, zone bounds, collisions, waddle and slap lunge
 src/controls.js      keyboard, D-pad and verb buttons
 src/pus.js           pus globs, pus points (saved), pimple regrowth
+src/scraps.js        Toad food: crumbs, hairs, flies (buzz, swat), pockets, respawn
 src/music.js         background music: menu + gameplay loop, "tap to enter" if autoplay is blocked, mute
 src/sfx.js           procedural sound: slap, splash, gulp, burp, bubble pop, squish, bloop
 src/ui/hud.js        objective, can meter, verb prompt, speech bubbles, bursts, end card

@@ -31,6 +31,31 @@ export function createHud(stage) {
       canEl.innerHTML = Array.from({ length: max }, (_, i) => `<i class="${i < n ? "full" : ""}"></i>`).join("");
     },
 
+    // Toad's belly: k in 0..1, label like "7/15".
+    setBelly(k, label) {
+      $("bellyFill").style.width = `${Math.round(Math.max(0, Math.min(1, k)) * 100)}%`;
+      $("bellyTxt").textContent = label;
+    },
+
+    setPockets(n, max = 12) {
+      const el = $("pockets");
+      el.textContent = n ? `pockets ${n}/${max}` : "pockets empty";
+      el.classList.toggle("full", n >= max);
+      if (n) {
+        el.classList.remove("bump");
+        void el.offsetWidth;
+        el.classList.add("bump");
+      }
+    },
+
+    // A bubble pinned to a spot in the world (not a character).
+    sign(x, g, top, text, life = 6) {
+      const el = document.createElement("div");
+      el.className = "bubble sign";
+      el.textContent = text;
+      pin(el, { x, g, top, lift: 0 }, life, 0.2);
+    },
+
     setPus(n, bump) {
       const el = $("pusCount");
       el.textContent = n;

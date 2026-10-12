@@ -8,9 +8,11 @@ import { createHud } from "./ui/hud.js";
 import { createStory } from "./story.js";
 import { createInteractions } from "./interact.js";
 import { createPus } from "./pus.js";
+import { createScraps } from "./scraps.js";
+import { POCKETS } from "./config.js";
 import { updateGates } from "./gates.js";
 import { eyeballTexture } from "./ink.js";
-import { unlock } from "./sfx.js";
+import { sfx, unlock } from "./sfx.js";
 import { createMusic } from "./music.js";
 
 document.title = GAME_TITLE;
@@ -57,9 +59,18 @@ async function boot() {
   const world = buildWorld(img);
   const player = createPlayer(img[PLAYER.sprite]);
   const hud = createHud(stage);
-  const story = createStory({ world, hud, img, eyeballImg: eyeballTexture() });
+  // When a hair wall evaporates, the camera swings over to show the
+  // opening, a sign points the way, then it comes back to you.
+  let peek = null;
+  const onOpen = (gate, stage) => {
+    peek = { x: gate.x, g: 4, t: 2.6 };
+    hud.sign(gate.x, 4.5, 2.4, gate.x < 0 ? `\u2190 ${stage.zone}` : `${stage.zone} \u2192`, 9);
+  };
+  const story = createStory({ world, hud, img, eyeballImg: eyeballTexture(), onOpen });
   const pus = createPus({ world, player, hud });
-  const verbs = createInteractions({ world, player, hud, story, pus });
+  const scraps = createScraps({ world, player, hud });
+  const verbs = createInteractions({ world, player, hud, story, pus, scraps });
+  hud.setPockets(0, POCKETS);
 
   window.addEventListener("resize", stage.resize);
   stage.resize();
@@ -70,7 +81,7 @@ async function boot() {
     if (zit) verbs.tapPimple(zit);
   });
 
-  if (new URLSearchParams(location.search).has("debug")) window.game = { player, world, story, pus, stage };
+  if (new URLSearchParams(location.search).has("debug")) window.game = { player, world, story, pus, stage, scraps };
 
   let last = performance.now();
   let running = false;
@@ -84,11 +95,19 @@ async function boot() {
       updatePlayer(player, input, dt, world.people, world.gates);
       verbs.update(input, dt);
       pus.update(dt);
+      scraps.update(dt, t);
       story.update(dt, player);
+      sfx.buzz(Math.max(0, 1 - scraps.nearestFly() / 7));
     }
     updateGates(world.gates, dt);
     animateWorld(world, t, dt);
-    stage.follow(player, dt);
+    if (peek) {
+      peek.t -= dt;
+      stage.follow(peek, dt);
+      if (peek.t <= 0) peek = null;
+    } else {
+      stage.follow(player, dt);
+    }
     stage.draw(world, player, verbs.carrying);
     hud.update(dt);
     requestAnimationFrame(tick);

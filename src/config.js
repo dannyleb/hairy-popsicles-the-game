@@ -22,3 +22,17 @@ export const PLAYER = { speed: 7, runSpeed: 12, depthSpeed: 0.5, radius: 0.6, sp
 
 export const CAN_SIZE = 5;
 export const REACH = 2.6;
+
+// Toad's appetite. Fill his belly to `goal` and the hedge to `opens`
+// withers; then he's hungry again for the next stage. Add a zone (and its
+// gate in gates.js) to grow the world.
+export const STAGES = [
+  { goal: 15, opens: "west", zone: "the west" },
+  { goal: 22, opens: "east", zone: "the east" },
+  { goal: 30, opens: null },
+];
+
+// What things are worth to Toad.
+export const FOOD = { crumb: 1, pube: 1, fly: 3, blob: 5, roast: 8, eyeball: 10 };
+
+export const POCKETS = 12;

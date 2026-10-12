@@ -1,5 +1,5 @@
-// Hedges of hair. Permanent ones fence the edges of the page; the two gate
-// hedges wither away when Toad has eaten enough.
+// Hedges of hair. Permanent ones fence the edges of the page; the gate
+// hedges evaporate when Toad is full (see STAGES in config.js).
 import { AREA } from "./config.js";
 import { hedgeTexture } from "./ink.js";
 
@@ -36,19 +36,20 @@ export function buildHedges() {
     ...row(maxX + e, 0, maxX + e, front + 0.6, { height: 1.9, spacing: 0.5 }),
   ];
   const gate = (x) => ({ clumps: row(x, 0, x, front + 0.6, { height: 1.9, spacing: 0.5 }), open: false, wither: 0 });
-  return { edges, west: gate(-gateX), east: gate(gateX) };
+  return { edges, west: { ...gate(-gateX), x: -gateX }, east: { ...gate(gateX), x: gateX } };
 }
 
 export function openGate(gate) {
   gate.open = true;
 }
 
-// Shrink factor for a gate's hair (1 = full, 0 = gone).
-export const gateScale = (gate) => (gate.open ? (1 - gate.wither) * (1 + Math.sin(gate.wither * 30) * 0.08) : 1);
+// A gate's hair evaporates: it fades and sags while steam rises off it.
+export const gateScale = (gate) => (gate.open ? 1 - gate.wither * 0.35 : 1);
+export const gateAlpha = (gate) => (gate.open ? 1 - gate.wither : 1);
 
 export function updateGates(gates, dt) {
   for (const g of [gates.west, gates.east]) {
-    if (g.open && g.wither < 1) g.wither = Math.min(1, g.wither + dt / 1.6);
+    if (g.open && g.wither < 1) g.wither = Math.min(1, g.wither + dt / 2.8);
   }
 }
 

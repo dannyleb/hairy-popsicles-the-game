@@ -1,8 +1,10 @@
 // The three verbs, Good Time Garden style:
-//   Slap  (Space)  whack whoever is nearest, or pop a pimple
-//   Tap/click a pimple to walk over and pop it
-//   Grab  (E)      pick up / drop / feed Toad / talk / pop a pimple
+//   Slap  (Space)  whack whoever is nearest, swat a fly, or pop a pimple
+//   Grab  (E)      feed Toad / pick up / drop / talk / swat / pop
 //   Water (Q)      splash from your can (refill by walking into drips)
+//   Tap/click a pimple to walk over and pop it
+// Crumbs, hairs and dead flies go in your pockets just by walking over them
+// (scraps.js); E next to Toad feeds him everything in your pockets.
 import { CAN_SIZE, REACH } from "./config.js";
 import { collectDrips, floorDist, makeEntity, popPimple, squash } from "./world.js";
 import { dripTexture } from "./ink.js";
@@ -10,7 +12,7 @@ import { sfx } from "./sfx.js";
 
 const SPRAY = dripTexture();
 
-export function createInteractions({ world, player, hud, story, pus }) {
+export function createInteractions({ world, player, hud, story, pus, scraps }) {
   let carrying = null;
   let can = 0;
   const flying = [];
@@ -47,16 +49,28 @@ export function createInteractions({ world, player, hud, story, pus }) {
 
   const nearestZit = () => nearest(world.pimples.filter((p) => p.kind === "pimple"));
 
+  function swat(f) {
+    player.lunge = 0.25;
+    sfx.swat();
+    scraps.swat(f);
+  }
+
   function slap() {
     player.lunge = 0.25;
-    // Characters and items win unless a pimple is clearly closer.
-    const who = nearest([...world.people, ...world.items]);
-    const zit = nearest(world.pimples.filter((p) => p.kind === "pimple"));
+    // Characters and items win unless a fly or pimple is clearly closer.
     const gap = (e) => floorDist(player, e) - e.radius;
-    const target = zit && (!who || gap(zit) < gap(who) - 0.6) ? zit : who;
+    let target = nearest([...world.people, ...world.items]);
+    const f = scraps.swatTarget(REACH);
+    if (f && (!target || gap(f) < gap(target) - 0.3)) target = f;
+    const zit = nearestZit();
+    if (zit && (!target || gap(zit) < gap(target) - 0.6)) target = zit;
     if (!target) return;
     if (target.kind === "pimple") {
       pop(target);
+      return;
+    }
+    if (target.kind === "fly") {
+      swat(target);
       return;
     }
     sfx.slap();
@@ -94,7 +108,31 @@ export function createInteractions({ world, player, hud, story, pus }) {
     }
   }
 
+  // Empty your pockets into Toad: each scrap arcs into his mouth.
+  function feedPockets() {
+    const toad = story.toad;
+    const items = scraps.takeAll();
+    hud.setPockets(0);
+    items.forEach((kind, i) => {
+      const e = makeEntity(scraps.picture(kind), kind === "fly" ? 0.8 : 0.6, player.x, player.g, { shadow: false, kind: "food" });
+      e.lift = player.top * 0.7;
+      world.fx.push(e);
+      fly(e, { x: toad.x + 0.4, g: toad.g + 0.01, lift: toad.top * 0.45 }, 0.5, 1.6, () => {
+        world.fx.splice(world.fx.indexOf(e), 1);
+        sfx.gulp();
+        say(toad, story.eat(kind));
+      });
+      const f = flying[flying.length - 1];
+      f.t = -i * 0.14;
+      f.shrink = true;
+    });
+  }
+
   function grab() {
+    if (!carrying && nearToad() && scraps.pockets.length) {
+      feedPockets();
+      return;
+    }
     if (carrying) {
       const item = carrying;
       if (nearToad() && story.edible(item)) {
@@ -133,6 +171,12 @@ export function createInteractions({ world, player, hud, story, pus }) {
     if (person) {
       sfx.grunt();
       say(person, story.talk(person));
+      return;
+    }
+
+    const f = scraps.swatTarget(REACH - 0.6);
+    if (f) {
+      swat(f);
       return;
     }
 
@@ -208,7 +252,9 @@ export function createInteractions({ world, player, hud, story, pus }) {
 
       const prompt = carrying
         ? (nearToad() && story.edible(carrying) ? "FEED TOAD" : "DROP")
-        : nearest(world.items) ? "GRAB" : nearest(world.people, 0.5) ? "TALK" : nearestZit() ? "POP" : "";
+        : nearToad() && scraps.pockets.length ? `FEED TOAD (${scraps.pockets.length})`
+        : nearest(world.items) ? "GRAB" : nearest(world.people, 0.5) ? "TALK"
+        : scraps.swatTarget(REACH - 0.6) ? "SWAT" : nearestZit() ? "POP" : "";
       hud.setPrompt(prompt);
     },
   };

@@ -1,6 +1,6 @@
 // Procedural sound effects (Web Audio, no files). unlock() must run inside
 // a real user gesture or phones stay silent.
-let ctx = null, master = null;
+let ctx = null, master = null, buzzNode = null;
 
 export function unlock() {
   if (!ctx) {
@@ -139,6 +139,39 @@ export const sfx = {
     burst(380 + Math.random() * 380, 5 + Math.random() * 4, 0.1 + Math.random() * 0.05, v, "bandpass");
     tone("sine", 140 + Math.random() * 50, 55, 0.11, v * 0.8);
     if (Math.random() < 0.35) tone("sine", 900 + Math.random() * 500, 1500, 0.03, 0.06, 0.06);
+  },
+  // Pocketing a scrap: a dry little tick.
+  pick() {
+    if (!ready()) return;
+    tone("triangle", 900 + Math.random() * 200, 1400, 0.05, 0.22);
+    burst(3500, 2, 0.03, 0.15, "bandpass");
+  },
+  swat() {
+    if (!ready()) return;
+    burst(1800, 0.7, 0.08, 0.9, "bandpass");
+    tone("sine", 220, 70, 0.1, 0.4);
+  },
+  // Continuous fly buzz; level 0..1 by how close the nearest fly is.
+  buzz(level) {
+    if (!ready()) return;
+    if (!buzzNode) {
+      const o = ctx.createOscillator();
+      o.type = "sawtooth";
+      o.frequency.value = 205;
+      const wob = ctx.createOscillator();
+      const wg = ctx.createGain();
+      wob.frequency.value = 7;
+      wg.gain.value = 14;
+      wob.connect(wg); wg.connect(o.frequency);
+      const f = ctx.createBiquadFilter();
+      f.type = "bandpass"; f.frequency.value = 900; f.Q.value = 1.4;
+      const g = ctx.createGain();
+      g.gain.value = 0;
+      o.connect(f); f.connect(g); g.connect(master);
+      o.start(); wob.start();
+      buzzNode = g;
+    }
+    buzzNode.gain.setTargetAtTime(level * 0.09, ctx.currentTime, 0.1);
   },
   rustle() {
     if (!ready()) return;

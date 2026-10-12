@@ -370,3 +370,156 @@ export function hedgeTexture() {
   }
   return c;
 }
+
+// ---------- scraps (Toad food) ----------
+
+// A crumb: a lumpy, toasted chunk with a few darker flecks.
+export function crumbTexture(seed) {
+  const rand = rng(seed);
+  const [c, ctx] = canvas(110, 90);
+  blob(ctx, 55, 50, 40 + rand() * 8, 28 + rand() * 8, rand, 7, 0.32);
+  ctx.fillStyle = "#e3a85c";
+  ctx.fill();
+  ctx.save();
+  ctx.clip();
+  ctx.fillStyle = "#c27c3a";
+  ctx.beginPath();
+  ctx.ellipse(70, 66, 34, 18, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#f3cf8a";
+  ctx.beginPath();
+  ctx.ellipse(42, 38, 14, 8, -0.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  blob(ctx, 55, 50, 40 + rand() * 0, 28, rng(seed), 7, 0.32);
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = INK;
+  ctx.stroke();
+  ctx.fillStyle = "#8c5124";
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath();
+    ctx.arc(30 + rand() * 50, 36 + rand() * 30, 2.5 + rand() * 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  return c;
+}
+
+// A curly pubic hair lying on the skin: a tight, uneven corkscrew.
+export function pubeTexture(seed) {
+  const rand = rng(seed);
+  const [c, ctx] = canvas(160, 70);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  const pts = [];
+  const turns = 4 + rand() * 2;
+  for (let i = 0; i <= 140; i++) {
+    const t = i / 140;
+    const a = t * turns * Math.PI * 2;
+    const r = 11 + Math.sin(t * 9 + rand()) * 2;
+    pts.push([16 + t * 128 + Math.cos(a) * r * 0.55, 36 + Math.sin(a) * r + (t - 0.5) * 10]);
+  }
+  const stroke = (w, color) => {
+    ctx.lineWidth = w;
+    ctx.strokeStyle = color;
+    ctx.beginPath();
+    pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    ctx.stroke();
+  };
+  stroke(9, "#f6d7bf");
+  stroke(4.5, INK);
+  return c;
+}
+
+// A house fly, wings up or down. Seen side-on, facing right.
+export function flyTexture(wingsUp, dead = false) {
+  const [c, ctx] = canvas(140, 110);
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = INK;
+  ctx.lineJoin = "round";
+  if (dead) {
+    ctx.translate(70, 55);
+    ctx.rotate(Math.PI);
+    ctx.translate(-70, -55);
+  }
+  // Wings (behind the body).
+  const wing = (rot) => {
+    ctx.save();
+    ctx.translate(64, 44);
+    ctx.rotate(rot);
+    ctx.beginPath();
+    ctx.ellipse(-4, -26, 15, 30, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(214, 236, 245, 0.85)";
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(46, 22, 22, 0.5)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-4, -2); ctx.lineTo(-6, -48);
+    ctx.moveTo(-4, -18); ctx.lineTo(6, -40);
+    ctx.stroke();
+    ctx.restore();
+  };
+  if (!dead) wing(wingsUp ? -0.55 : 0.35);
+  // Legs.
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 4;
+  ctx.lineCap = "round";
+  for (const [x, dx] of [[50, -10], [64, 0], [78, 10]]) {
+    ctx.beginPath();
+    ctx.moveTo(x, 66);
+    ctx.lineTo(x + dx * 0.6, 82);
+    ctx.lineTo(x + dx, 92);
+    ctx.stroke();
+  }
+  // Abdomen and thorax.
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.ellipse(48, 60, 30, 20, 0.15, 0, Math.PI * 2);
+  ctx.fillStyle = "#4a3a3a";
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = "#7a6262";
+  ctx.lineWidth = 3;
+  for (const x of [36, 48, 60]) {
+    ctx.beginPath();
+    ctx.moveTo(x, 44); ctx.quadraticCurveTo(x + 4, 60, x, 76);
+    ctx.stroke();
+  }
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.ellipse(80, 56, 17, 16, 0, 0, Math.PI * 2);
+  ctx.fillStyle = "#5a4646";
+  ctx.fill();
+  ctx.stroke();
+  // Head with big red eye.
+  ctx.beginPath();
+  ctx.arc(100, 56, 15, 0, Math.PI * 2);
+  ctx.fillStyle = "#5a4646";
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(104, 51, 11, 0, Math.PI * 2);
+  ctx.fillStyle = "#c8364a";
+  ctx.fill();
+  ctx.lineWidth = 3.5;
+  ctx.stroke();
+  ctx.fillStyle = "#f5b0b0";
+  ctx.beginPath();
+  ctx.arc(101, 47, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+  if (!dead) wing(wingsUp ? -0.15 : 0.6);
+  if (dead) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 4;
+    for (const [x, y] of [[36, 59]]) {
+      ctx.beginPath();
+      ctx.moveTo(x - 5, y - 5); ctx.lineTo(x + 5, y + 5);
+      ctx.moveTo(x + 5, y - 5); ctx.lineTo(x - 5, y + 5);
+      ctx.stroke();
+    }
+  }
+  return c;
+}

@@ -3,7 +3,7 @@
 // a wobbly ink horizon; everything on the floor is painted back-to-front.
 import { AREA, INK, VIEW } from "./config.js";
 import { FLOOR_SKIN, WALL_SKIN, shadowTexture, skinTile, stickTexture } from "./ink.js";
-import { gateScale } from "./gates.js";
+import { gateAlpha, gateScale } from "./gates.js";
 
 const SHADOW = shadowTexture();
 const STICK = stickTexture();
@@ -76,14 +76,28 @@ export function createStage(canvas) {
     ctx.restore();
   }
 
-  function drawClump(c, k) {
-    if (k <= 0.01 || !onScreen(c.x, c.w)) return;
+  function drawClump(c, k, alpha = 1) {
+    if (k <= 0.01 || alpha <= 0.01 || !onScreen(c.x, c.w)) return;
     const h = c.h * k;
     ctx.save();
+    ctx.globalAlpha = alpha;
     ctx.translate(X(c.x), Y(c.g));
     if (c.flip) ctx.scale(-1, 1);
     ctx.drawImage(c.img, -c.w / 2 * U, -h * U, c.w * U, h * U);
     ctx.restore();
+  }
+
+  // Steam puffs rising off an evaporating hair wall.
+  function drawSteam(gate) {
+    const w = gate.wither, a = Math.sin(w * Math.PI) * 0.55;
+    ctx.fillStyle = `rgba(255, 246, 236, ${a})`;
+    for (let i = 0; i < 14; i++) {
+      const g = (i / 13) * AREA.front, rise = (w * 3 + (i % 3) * 0.6) % 3.5;
+      const r = (0.35 + (i % 4) * 0.12 + w * 0.4) * U;
+      ctx.beginPath();
+      ctx.arc(X(gate.x + Math.sin(i * 1.7 + w * 6) * 0.5), Y(g) - (0.8 + rise) * U, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   function draw(world, player, carried) {
@@ -136,9 +150,11 @@ export function createStage(canvas) {
     const list = [];
     for (const c of world.gates.edges) list.push([c.g, () => drawClump(c, 1)]);
     for (const gate of [world.gates.west, world.gates.east]) {
-      const k = gateScale(gate);
-      if (k > 0.01) for (const c of gate.clumps) list.push([c.g, () => drawClump(c, k)]);
+      const k = gateScale(gate), a = gateAlpha(gate);
+      if (a > 0.01) for (const c of gate.clumps) list.push([c.g, () => drawClump(c, k, a)]);
+      if (gate.open && gate.wither < 1) list.push([AREA.front, () => drawSteam(gate)]);
     }
+    for (const e of world.scraps) list.push([e.g, () => drawEntity(e)]);
     for (const e of world.people) list.push([e.g, () => drawEntity(e)]);
     for (const e of world.items) if (e !== carried) list.push([e.g, () => drawEntity(e)]);
     for (const e of world.drips) list.push([e.g, () => drawEntity(e)]);
