@@ -13,7 +13,7 @@ export default [
     },
   },
   {
-    files: ["*.js", "*.mjs"],
+    files: ["*.js", "*.mjs", "tools/**/*.mjs"],
     languageOptions: { ecmaVersion: 2022, sourceType: "module", globals: globals.node },
   },
 ];

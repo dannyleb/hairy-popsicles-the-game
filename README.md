@@ -1,14 +1,25 @@
 # Hairy Popsicles
 
-A browser-based 3D free-roam game, built with Three.js. Fully static site,
-no framework, no server code — just like
-[Eagle Lake: Green Dog Run](https://github.com/dannyleb/eagle-lake-3d), which
-this project's tech stack and project layout are deliberately modeled on.
+A browser-based 3D free-roam game built with Three.js, where every
+character is a hand-drawn ink-and-colored-pencil drawing cut out of the
+page. Fully static site, no framework, no server code; same stack and
+layout as [Eagle Lake: Green Dog Run](https://github.com/dannyleb/eagle-lake-3d).
 
-This is a **framework scaffold**, not a finished game: a flat placeholder
-world, a placeholder player capsule, and a one-mission scaffold ("collect
-the popsicles"). The real visual style, world and missions are TBD, to be
-defined once hand-drawn reference art is dropped into `assets/`.
+## Art direction
+
+- **The world is the sketchbook page.** The ground is a real scanned paper
+  texture, and the fog is paper-white, so the world fades back into blank
+  paper at the edges.
+- **Characters are the scans themselves**, cut out of the paper and stood
+  up as flat billboards (the Don't Starve / Paper Mario approach). The
+  camera holds a fixed three-quarter angle so the art always faces you.
+- **Floating heads are popsicles**, planted on wooden sticks and swaying.
+- **Props are drawn in the same vocabulary** at runtime (`src/ink.js`):
+  pen-hatched shadows like the ones in the balloon-gang drawing, stray
+  hairs sprouting from the paper, blue drips, the sticks.
+- **Unlit.** Everything uses flat, unlit materials so pencil colors render
+  exactly as drawn. The ink is already in the art, so there's no outline
+  shader.
 
 ## Tech stack
 
@@ -17,8 +28,9 @@ defined once hand-drawn reference art is dropped into `assets/`.
 | Rendering | [Three.js](https://threejs.org/) (WebGL) |
 | Language | Plain JavaScript (ES modules), no framework |
 | Bundler | esbuild: one IIFE bundle targeting ES2019 |
+| Art pipeline | `tools/cutout.mjs` with [sharp](https://sharp.pixelplumbing.com/) (dev only) |
 | Linting | ESLint 9 (flat config, `eslint.config.js`) |
-| Hosting | GitHub Pages, deployed by GitHub Actions |
+| Hosting | GitHub Pages, deployed by GitHub Actions on push to `main` |
 | Runtime | Node 20+ (build only) |
 
 ## Running locally
@@ -27,55 +39,36 @@ defined once hand-drawn reference art is dropped into `assets/`.
 npm install
 npm run dev       # dev server at http://localhost:8080, rebuilds on reload
 npm run build     # production build into dist/
-npm run lint      # ESLint over src/ and the build script
+npm run lint      # ESLint over src/, tools/ and the build script
+npm run sprites   # re-cut sprites from assets/concept/ (see assets/README.md)
 ```
 
 Edits to `public/` or `assets/` need a dev server restart. `dist/` is
 generated and not committed.
 
-## Build and deploy
+## Current gameplay
 
-`build.mjs` does the whole build:
-
-1. Wipes `dist/` and copies `public/` (page, styles) and `assets/` into it.
-2. Bundles `src/main.js` with esbuild into `dist/bundle.js`.
-3. Stamps content hashes onto the script and stylesheet links so a browser
-   never pairs a fresh `index.html` with a stale cached bundle.
-
-`.github/workflows/pages.yml` runs on every push to `main`: `npm ci`, lint,
-build, then deploy `dist/` to GitHub Pages. Turn on Pages for this repo
-under **Settings → Pages → Source: GitHub Actions** once this is pushed.
-
-## Current (placeholder) gameplay
-
-- Free-roam on foot over a flat checkered field.
-- WASD / arrow keys to move, Shift to run, on-screen D-pad on touch devices.
-- Third-person follow camera.
-- One scaffold mission: walk into all 12 placeholder popsicle cones.
+- Walk the page (WASD / arrows, Shift to run, D-pad on touch).
+- You play Antenna; the other 22 characters from the drawings stand around the field.
+- One mission: mop up 12 blue drips.
 
 ## Project structure
 
 ```
-src/main.js          scene setup, animation loop, start screen wiring
-src/config.js        world/player/camera constants
+src/main.js          texture loading, game loop, start screen wiring
+src/config.js        world, player, camera, paper/ink colors
+src/roster.js        every character: sprite, size, stick or not, position
+src/cutout.js        a drawing standing in the world (art + stick + shadow)
+src/ink.js           runtime-drawn props: stick, hatched shadow, hair tufts, drip
+src/world.js         paper ground, fog, tufts, cast, drips, moon
+src/player.js        player movement, collisions, paper-puppet waddle
+src/camera.js        fixed three-quarter follow camera
 src/controls.js      keyboard + on-screen D-pad input
-src/world.js         ground, lighting, fog, placeholder pickups
-src/player.js        placeholder player mesh and movement
-src/camera.js        third-person follow camera
-src/missions/        data-driven mission scaffold
-src/ui/hud.js        objective banner + toast
-public/              static files: index.html, style.css
-assets/              hand-drawn art goes here once it exists (see assets/README.md)
+src/missions/        data-driven missions
+src/ui/hud.js        objective card + toast
+public/              index.html, style.css
+assets/              scans, sprites, paper texture (see assets/README.md)
+tools/cutout.mjs     paper keying + sprite export
 build.mjs            esbuild build and dev server; cache-busting hashes
-eslint.config.js     lint rules
 .github/workflows/pages.yml   lint, build, deploy to GitHub Pages
 ```
-
-## Next steps
-
-1. Drop hand-drawn reference art into `assets/concept/`.
-2. Settle on art direction (texture style, character look) from that art.
-3. Replace the procedural placeholders in `src/world.js` / `src/player.js`
-   with real textures/sprites.
-4. Flesh out `src/missions/index.js` with real missions once the setting
-   and story are defined.

@@ -1,12 +1,12 @@
 // Missions are data, not code paths. Each one has an id, a title, a short
 // description and a step. The only step type for now is "collect": clear
-// every placeholder pickup. Add real step types (goto, talk, timed, etc.)
+// every pickup. Add real step types (goto, talk, timed, etc.)
 // once real missions take shape.
 export const missions = [
   {
-    id: "collect-popsicles",
-    title: "Round up the popsicles",
-    description: "Walk into every popsicle scattered around the field.",
+    id: "mop-drips",
+    title: "Mop up the drips",
+    description: "Everyone's melting. Walk into every blue drip in the field.",
     step: { type: "collect", total: 12 },
   },
 ];

@@ -1,18 +1,22 @@
 # Assets
 
-Drop hand-drawn reference and production art here. Nothing currently reads
-from this folder — it's wired into the build (`build.mjs` copies it into
-`dist/assets/`) so that once real art lands, code can load it with a plain
-relative path like `assets/textures/grass.png`.
+| Folder | What | Shipped to the site? |
+|---|---|---|
+| `concept/` | Original scans, one drawing per file, named by character | No (build skips it) |
+| `sprites/` | Cut-out transparent WebP sprites made from `concept/` | Yes |
+| `textures/` | `paper.jpg`, a blank patch of real paper used as the ground | Yes |
 
-Suggested layout, create as needed:
+## Adding a new drawing
 
-- `concept/` — reference drawings/photos used to define the look, not
-  shipped art. Fine to keep large/messy here.
-- `textures/` — tileable ground/wall/sky textures.
-- `sprites/` — characters, pickups, UI icons.
+1. Scan it (white/off-white paper, the more blank margin the better) and
+   drop it in `concept/` as `<name>.jpg`.
+2. `npm run sprites -- <name>` (or plain `npm run sprites` to redo all).
+3. Check `sprites/<name>.webp`. If one page had several separate drawings
+   on it, they come out as `<name>.webp`, `<name>-2.webp`, ... largest first.
+4. Add the character to `src/roster.js` (height, stick or not, position).
 
-Everything in the game right now (ground checker, player capsule, popsicle
-cones) is a procedural placeholder in `src/world.js` and `src/player.js`.
-Once art arrives, swap those for texture/sprite loads and we'll settle on
-the real visual style and missions from there.
+The cut-out keys out the paper by flood-filling from the edges, so pale
+skin inside an ink outline survives. Paper fully enclosed by lines (between
+legs, between hairs) gets removed too. If a sprite comes out wrong, hand
+fixing the WebP in an image editor is fine; just don't re-run the script
+over it afterwards.

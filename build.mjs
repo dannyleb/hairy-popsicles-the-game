@@ -1,6 +1,6 @@
 // Build: bundle src/ with esbuild and assemble the site in dist/ (what
 // GitHub Pages serves). public/ holds the static files (page, styles) and
-// is copied over as-is.
+// is copied over as-is, along with assets/ minus the original scans.
 //
 //   node build.mjs           one production build into dist/
 //   node build.mjs --serve   dev server on http://localhost:8080 that
@@ -25,7 +25,8 @@ const options = {
 
 rmSync(OUT, { recursive: true, force: true });
 cpSync("public", OUT, { recursive: true });
-cpSync("assets", `${OUT}/assets`, { recursive: true });
+// Original scans stay out of the site; only the processed sprites ship.
+cpSync("assets", `${OUT}/assets`, { recursive: true, filter: (src) => !src.includes("concept") });
 
 if (serve) {
   const ctx = await esbuild.context(options);
