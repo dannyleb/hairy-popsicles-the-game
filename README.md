@@ -16,6 +16,10 @@ framework, no server code, deployed to GitHub Pages like
   patches, pores, creases and stray hairs, split by a thick ink horizon.
   The camera scrolls left and right; you can also walk into and out of the
   floor, and things further back are painted behind.
+- **Parallax layers** (`PARALLAX` in `src/stage.js`), back to front: moon
+  (barely moves), skin wall/sky (0.25x), wall pimples (0.4x), distant
+  flesh hills with giant hairs (0.6x), the ground and everyone on it (1x),
+  foreground hair along the bottom edge (1.35x).
 - **Swollen pimples everywhere**, random sizes: domes on the floor and
   round ones on the wall.
 - **Traced 2D illustration.** The scans aren't shown as-is: each one is

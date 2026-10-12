@@ -2,7 +2,7 @@
 // yellowing skin wall behind, a flushed peach skin floor in front, split by
 // a wobbly ink horizon; everything on the floor is painted back-to-front.
 import { AREA, INK, VIEW } from "./config.js";
-import { FLOOR_SKIN, WALL_SKIN, shadowTexture, skinTile, stickTexture } from "./ink.js";
+import { FLOOR_SKIN, WALL_SKIN, hedgeTexture, rng, shadowTexture, skinTile, stickTexture } from "./ink.js";
 import { gateAlpha, gateScale } from "./gates.js";
 
 const SHADOW = shadowTexture();
@@ -10,9 +10,44 @@ const STICK = stickTexture();
 
 const TILE_UNITS = 7; // world units per skin tile
 
+// Parallax: how fast each layer scrolls relative to the ground (1).
+const PARALLAX = { moon: 0.06, wall: 0.25, wallPimples: 0.4, hills: 0.6, fore: 1.35 };
+
+// Distant lumpy flesh hills on the horizon, with a few giant hairs.
+function makeHills() {
+  const rand = rng(77);
+  const pts = [];
+  const span = 140;
+  let h = 1.5;
+  for (let x = -span; x <= span; x += 0.8) {
+    h += (rand() - 0.5) * 0.7;
+    h = Math.max(0.6, Math.min(3.2, h * 0.94 + 1.6 * 0.06));
+    pts.push([x, h]);
+  }
+  const hairs = [];
+  for (let x = -span; x <= span; x += 3 + rand() * 6) {
+    hairs.push({ x, len: 1.2 + rand() * 2.4, lean: (rand() - 0.5) * 1.6, curl: (rand() - 0.5) * 1.2 });
+  }
+  return { pts, hairs };
+}
+
+function makeForeground() {
+  const rand = rng(91);
+  const kinds = Array.from({ length: 3 }, () => hedgeTexture());
+  const out = [];
+  for (let x = -90; x <= 90; x += 6 + rand() * 7) {
+    const img = kinds[Math.floor(rand() * kinds.length)];
+    const h = 1.6 + rand() * 1.4;
+    out.push({ img, x, h, w: h * (img.width / img.height) * 1.3, flip: rand() < 0.5 });
+  }
+  return out;
+}
+
 export function createStage(canvas) {
   const ctx = canvas.getContext("2d");
   const floorTile = skinTile(FLOOR_SKIN);
+  const hills = makeHills();
+  const fore = makeForeground();
   const wallTile = skinTile(WALL_SKIN);
   let floorPat = null, wallPat = null;
   let W = 0, H = 0, U = 40;
@@ -101,28 +136,58 @@ export function createStage(canvas) {
   }
 
   function draw(world, player, carried) {
-    // Skin, scrolling with the camera: wall above the horizon, floor below.
+    // Screen x for a layer scrolling at `k` times the ground's speed.
+    const PX = (x, k) => (x - cam.x * k) * U + W / 2;
+    const tileScale = TILE_UNITS * U / floorTile.width;
+
+    // Far skin wall (sky), scrolling slowly.
     const hy = Y(0);
-    const m = new DOMMatrix().translate(-cam.x * U + W / 2, -cam.g * U + H / 2).scale(TILE_UNITS * U / floorTile.width);
-    wallPat.setTransform(m);
-    floorPat.setTransform(m);
+    wallPat.setTransform(new DOMMatrix().translate(-cam.x * PARALLAX.wall * U + W / 2, -cam.g * PARALLAX.wall * U + H / 2).scale(tileScale));
     ctx.fillStyle = wallPat;
     ctx.fillRect(0, 0, W, Math.max(0, hy));
-    ctx.fillStyle = floorPat;
-    ctx.fillRect(0, Math.max(0, hy), W, H);
+
+    // The moon, barely moving.
+    if (world.moon) {
+      const mh = 2.6 * U, mw = mh * world.moon.width / world.moon.height;
+      ctx.drawImage(world.moon, W * 0.08 - cam.x * U * PARALLAX.moon, Y(-5.6) - mh / 2, mw, mh);
+    }
 
     // Pimples swelling out of the wall.
     for (const p of world.wallPimples) {
-      if (!onScreen(p.x, p.size)) continue;
-      const s = p.size * U;
-      ctx.drawImage(p.img, X(p.x) - s / 2, Y(p.y) - s / 2, s, s);
+      const s = p.size * U, sx = PX(p.x, PARALLAX.wallPimples);
+      if (sx + s < 0 || sx - s > W) continue;
+      ctx.drawImage(p.img, sx - s / 2, Y(p.y) - s / 2, s, s);
     }
 
-    // The moon, drifting slowly behind everything.
-    if (world.moon) {
-      const mh = 2.6 * U, mw = mh * world.moon.width / world.moon.height;
-      ctx.drawImage(world.moon, W * 0.08 - cam.x * U * 0.06, Y(-5.6) - mh / 2, mw, mh);
+    // Distant flesh hills sitting on the horizon.
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(PX(hills.pts[0][0], PARALLAX.hills), hy);
+    for (const [x, h] of hills.pts) ctx.lineTo(PX(x, PARALLAX.hills), hy - h * U);
+    ctx.lineTo(PX(hills.pts[hills.pts.length - 1][0], PARALLAX.hills), hy);
+    ctx.closePath();
+    ctx.fillStyle = "#cf9a7e";
+    ctx.fill();
+    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = INK;
+    ctx.stroke();
+    ctx.lineWidth = 3;
+    for (const hr of hills.hairs) {
+      const bx = PX(hr.x, PARALLAX.hills);
+      if (bx < -80 || bx > W + 80) continue;
+      const i = Math.round((hr.x - hills.pts[0][0]) / 0.8);
+      const base = hy - (hills.pts[Math.max(0, Math.min(hills.pts.length - 1, i))][1] - 0.1) * U;
+      ctx.beginPath();
+      ctx.moveTo(bx, base);
+      ctx.bezierCurveTo(bx + hr.curl * U, base - hr.len * 0.4 * U, bx + (hr.lean - hr.curl) * U, base - hr.len * 0.8 * U, bx + hr.lean * U, base - hr.len * U);
+      ctx.stroke();
     }
+
+    // Ground: moves 1:1 with the world.
+    floorPat.setTransform(new DOMMatrix().translate(-cam.x * U + W / 2, -cam.g * U + H / 2).scale(tileScale));
+    ctx.fillStyle = floorPat;
+    ctx.fillRect(0, Math.max(0, hy), W, H);
 
     // Horizon: a hand-wobbly ink line.
     ctx.strokeStyle = INK;
@@ -177,6 +242,19 @@ export function createStage(canvas) {
     for (const e of world.globs) list.push([e.g + 0.001, () => drawEntity(e)]);
     list.sort((a, b) => a[0] - b[0]);
     for (const [, fn] of list) fn();
+
+    // Foreground hair, closest to the camera: sweeps past faster than you,
+    // only along the bottom edge of the screen.
+    const baseY = Math.max(Y(AREA.front + 1.4), H - 0.5 * U);
+    for (const f of fore) {
+      const fx = (f.x - cam.x * PARALLAX.fore) * U + W / 2;
+      if (fx + f.w * U < 0 || fx - f.w * U > W) continue;
+      ctx.save();
+      ctx.translate(fx, baseY + 0.5 * U);
+      if (f.flip) ctx.scale(-1, 1);
+      ctx.drawImage(f.img, -f.w / 2 * U, -f.h * U, f.w * U, f.h * U);
+      ctx.restore();
+    }
   }
 
   return {
