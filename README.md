@@ -18,12 +18,16 @@ framework, no server code, deployed to GitHub Pages like
   floor, and things further back are painted behind.
 - **Swollen pimples everywhere**, random sizes: domes on the floor and
   round ones on the wall.
-- **Flat 2D illustration.** The scanned drawings are processed into solid
-  colors, solid ink lines and one consistent thick dark outline
-  (`tools/stylize.mjs`); no pencil texture survives. Their colors are
-  pulled toward the world's skin palette and outlines are a warm
-  maroon-black, so the cast sits in the same world as the ground.
-  Everything the game draws itself (`src/ink.js`) uses the same rules.
+- **Traced 2D illustration.** The scans aren't shown as-is: each one is
+  rebuilt (`tools/trace.mjs`). Its pen lines are extracted and vector-traced
+  into crisp, even ink; its colored areas are replaced by one fixed,
+  shared palette so every character uses the same colors; and every
+  character gets the same cel-shading (a darker tone along the lower-right
+  edge) and a thin maroon-black outline.
+- **Characters are flesh-toned only:** peach, pale yellow, pink and tan for
+  base tones. Greens become jaundiced yellow, whites and greys become pale
+  peach; small accents stay (blood red, drip blue, ink). The world is a
+  dustier, deeper flesh so the cast reads on top of it.
 - **Floating heads are popsicles**, planted on wooden sticks and swaying.
 
 ## Tech stack
@@ -33,7 +37,7 @@ framework, no server code, deployed to GitHub Pages like
 | Rendering | Canvas 2D, no engine |
 | Language | Plain JavaScript (ES modules), no framework, no runtime dependencies |
 | Bundler | esbuild: one IIFE bundle targeting ES2019 |
-| Art pipeline | `tools/cutout.mjs` + `tools/stylize.mjs` with [sharp](https://sharp.pixelplumbing.com/) (dev only) |
+| Art pipeline | `tools/cutout.mjs` + `tools/trace.mjs` with [sharp](https://sharp.pixelplumbing.com/) and [potrace](https://www.npmjs.com/package/potrace) (dev only) |
 | Linting | ESLint 9 (flat config, `eslint.config.js`) |
 | Hosting | GitHub Pages, deployed by GitHub Actions on push to `main` |
 | Runtime | Node 20+ (build only) |
@@ -94,13 +98,13 @@ src/ink.js           everything drawn at runtime: skin tiles, pimples, stick, sh
 src/player.js        movement, zone bounds, collisions, waddle and slap lunge
 src/controls.js      keyboard, D-pad and verb buttons
 src/pus.js           pus globs, pus points (saved), pimple regrowth
-src/music.js         background music: menu + gameplay loop, mute (saved), tab-hidden pause
+src/music.js         background music: menu + gameplay loop, "tap to enter" if autoplay is blocked, mute
 src/sfx.js           procedural sound: slap, splash, gulp, burp, bubble pop, squish, bloop
 src/ui/hud.js        objective, can meter, verb prompt, speech bubbles, bursts, end card
 public/              index.html, style.css, audio/theme.mp3 (background music)
 assets/              scans and processed sprites (see assets/README.md)
 tools/cutout.mjs     paper keying, splitting, sprite export
-tools/stylize.mjs    flat-illustration pass: solid colors, solid ink, thick outline
+tools/trace.mjs      rebuild as vector art: traced lines, fixed flesh palette, cel shade, outline
 build.mjs            esbuild build and dev server; cache-busting hashes
 .github/workflows/pages.yml   lint, build, deploy to GitHub Pages
 ```

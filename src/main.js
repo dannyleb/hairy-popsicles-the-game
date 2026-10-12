@@ -17,11 +17,24 @@ document.title = GAME_TITLE;
 
 const pressStart = document.getElementById("pressStart");
 
-// Menu music starts on the first tap or keypress anywhere.
+// Menu music from the moment the menu shows. Browsers block sound until
+// the first tap, so if autoplay is refused, a "tap to enter" gate takes
+// that tap and the menu opens with music already playing.
 const music = createMusic([...document.querySelectorAll(".musicBtn")]);
-const firstGesture = () => music.play();
-window.addEventListener("pointerdown", firstGesture, { once: true });
-window.addEventListener("keydown", firstGesture, { once: true });
+const gate = document.getElementById("enterGate");
+music.autoplay().then((state) => {
+  if (state !== "blocked") return;
+  gate.hidden = false;
+  const enter = () => {
+    unlock();
+    music.play();
+    gate.classList.add("gone");
+    setTimeout(() => (gate.hidden = true), 450);
+    window.removeEventListener("keydown", enter);
+  };
+  gate.addEventListener("click", enter, { once: true });
+  window.addEventListener("keydown", enter);
+});
 
 function loadImages() {
   const entries = SPRITES.map((s) => [s, `assets/sprites/${s}.webp`]);

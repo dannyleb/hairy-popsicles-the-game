@@ -6,11 +6,11 @@
 // For each scan: key out the paper with a contiguous flood fill from the
 // edges (so pale skin inside an ink outline survives), split what's left
 // into separate drawings, flatten each into 2D illustration style (solid
-// colors, solid ink, thick outline; see stylize.mjs) and write it as a
+// colors, solid ink, outline; see trace.mjs) and write it as a
 // trimmed transparent WebP to assets/sprites/<name>.webp, <name>-2.webp, ...
 // (largest first).
 import sharp from "sharp";
-import { distance, outlineFor, stylize } from "./stylize.mjs";
+import { distance, outlineFor, traceDrawing } from "./trace.mjs";
 import { mkdirSync, readdirSync, rmSync } from "node:fs";
 import { basename, extname, join } from "node:path";
 
@@ -244,10 +244,10 @@ async function exportPiece(img, fg, label, piece, outFile) {
       rgba[o + 3] = fg[p] && label[p] === piece.id && !(piece.cutY && y + y0 > piece.cutY) ? 255 : 0;
     }
   }
-  const flat = await stylize(rgba, cw, chh);
-  await sharp(flat, { raw: { width: cw, height: chh, channels: 4 } })
-    .resize(SPRITE, SPRITE, { fit: "inside", withoutEnlargement: true })
-    .webp({ quality: 86, alphaQuality: 100 })
+  const svg = await traceDrawing(rgba, cw, chh);
+  const k = Math.min(1, SPRITE / Math.max(cw, chh));
+  await sharp(Buffer.from(svg), { density: 72 * k })
+    .webp({ quality: 88, alphaQuality: 100 })
     .toFile(outFile);
 }
 

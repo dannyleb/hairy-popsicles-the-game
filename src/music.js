@@ -1,5 +1,6 @@
-// Background music: one looping track for the menu and gameplay. Starts on
-// the first tap/keypress (browsers block sound before that), dips a little
+// Background music: one looping track for the menu and gameplay. Tries to
+// start on page load; if the browser blocks that, the "tap to enter" gate
+// gets the first tap and starts it on the menu. Dips a little
 // once the game starts so sound effects cut through, remembers mute, and
 // pauses while the tab is hidden. If the file isn't there, the music
 // buttons stay hidden.
@@ -44,6 +45,21 @@ export function createMusic(buttons) {
     audio.play().then(() => fadeTo(target)).catch(() => {});
   }
 
+  // Try to start straight away (works when the browser allows autoplay).
+  // Resolves "playing", "blocked" (needs a tap first), "muted" or "missing".
+  async function autoplay() {
+    wanted = true;
+    if (muted) return "muted";
+    audio.src = SRC;
+    try {
+      await audio.play();
+      fadeTo(target);
+      return "playing";
+    } catch (e) {
+      return e && e.name === "NotAllowedError" ? "blocked" : "missing";
+    }
+  }
+
   function setMode(mode) {
     target = LEVEL[mode];
     if (!audio.paused) fadeTo(target);
@@ -69,5 +85,5 @@ export function createMusic(buttons) {
     .catch(() => render());
   render();
 
-  return { play, setMode };
+  return { play, setMode, autoplay };
 }

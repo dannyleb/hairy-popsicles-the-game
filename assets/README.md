@@ -21,7 +21,10 @@
    trapped between lines; splits separate drawings. Per-scan options at
    the top of the file handle drawn ground lines (`GROUND_LINES`), pencil
    glows (`HALOS`) and figures drawn inside a scene (`ISOLATE`, e.g. Toad).
-2. **Flatten** (`tools/stylize.mjs`): smooths the pencil grain away,
-   groups colors by hue so shading becomes one solid fill, keeps small
-   distinct spots (pimples, pupils), turns pen lines into solid ink, and
-   adds one thick dark outline around the whole figure. Tune with `STYLE`.
+2. **Trace** (`tools/trace.mjs`): rebuilds the drawing instead of cleaning
+   up the scan. Pen lines are found (faint ones included), given a minimum
+   weight and vector-traced. Color areas are found, then each is replaced
+   by an entry from the fixed character palette (`PALETTE`): flesh tones
+   only for base colors, plus red, blue and ink accents. A cel-shade
+   crescent and a thin outline are added, and the layers are traced and
+   stacked into an SVG that's rendered to the sprite. Tune with `STYLE`.

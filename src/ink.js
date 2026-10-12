@@ -92,29 +92,31 @@ export function skinTile({ size = 512, seed = 1, base, blotches, pore, crease })
   return c;
 }
 
+// The world is deeper and dustier than the cast, so the characters'
+// brighter flesh tones read on top of it.
 export const FLOOR_SKIN = {
   seed: 7,
-  base: "#eeb196",
+  base: "#d6947f",
   blotches: [
-    ["#eda79a", 6, 90, 170],   // pink flush
-    ["#ecbd8d", 6, 70, 150],   // jaundiced yellow
-    ["#e7a68c", 5, 50, 110],   // sallow
-    ["#f1bca2", 6, 30, 80],    // pale patches
-    ["#df9590", 7, 6, 16],     // inflamed spots
+    ["#d38a86", 6, 90, 170],   // pink flush
+    ["#d6a175", 6, 70, 150],   // jaundiced
+    ["#cc8a74", 5, 50, 110],   // sallow
+    ["#dda08b", 6, 30, 80],    // paler patches
+    ["#c27474", 7, 6, 16],     // inflamed spots
   ],
-  pore: "rgba(122, 64, 50, 0.35)",
-  crease: "rgba(150, 82, 64, 0.4)",
+  pore: "rgba(110, 52, 44, 0.4)",
+  crease: "rgba(120, 58, 48, 0.45)",
 };
 
 export const WALL_SKIN = {
   seed: 23,
-  base: "#efcda0",
+  base: "#dfb989",
   blotches: [
-    ["#ecd29a", 6, 90, 170],   // yellowing
-    ["#edc0a0", 5, 70, 140],   // peach
-    ["#ebb6a2", 4, 50, 100],   // pink
+    ["#ddbf82", 6, 90, 170],   // yellowing
+    ["#dcaa88", 5, 70, 140],   // peach
+    ["#d79f8f", 4, 50, 100],   // pink
   ],
-  pore: "rgba(130, 90, 60, 0.25)",
+  pore: "rgba(120, 78, 50, 0.3)",
   crease: null,
 };
 
