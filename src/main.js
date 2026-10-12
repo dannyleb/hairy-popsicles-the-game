@@ -16,7 +16,7 @@ document.title = GAME_TITLE;
 const pressStart = document.getElementById("pressStart");
 
 function loadImages() {
-  const entries = [["paper", "assets/textures/paper.jpg"], ...SPRITES.map((s) => [s, `assets/sprites/${s}.webp`])];
+  const entries = SPRITES.map((s) => [s, `assets/sprites/${s}.webp`]);
   let done = 0;
   return Promise.all(entries.map(async ([key, url]) => {
     const img = new Image();
@@ -32,7 +32,7 @@ async function boot() {
   img.blob = img[BLOB];
   img.moon = img[MOON];
 
-  const stage = createStage(document.getElementById("gameCanvas"), img.paper);
+  const stage = createStage(document.getElementById("gameCanvas"));
   const world = buildWorld(img);
   const player = createPlayer(img[PLAYER.sprite]);
   const hud = createHud(stage);

@@ -1,7 +1,8 @@
 # Hairy Popsicles
 
-A flat 2D browser game where every character is a hand-drawn
-ink-and-colored-pencil drawing cut out of the page. Design inspiration:
+A flat 2D browser game built from hand-drawn ink-and-colored-pencil
+characters, turned into flat illustration and set loose in a world made of
+skin. Design inspiration:
 [The Good Time Garden](https://store.steampowered.com/app/1200860/The_Good_Time_Garden/)
 by Coal Supper: a short, gross, surreal garden where you slap, water and
 carry things to feed a friend who's always hungry. Fully static site, no
@@ -10,16 +11,18 @@ framework, no server code, deployed to GitHub Pages like
 
 ## Art direction
 
-- **The world is the sketchbook page.** Side-on 2D stage: scanned paper
-  everywhere, a hand-wobbly ink horizon line, sky above, floor below. The
-  camera scrolls left and right; you can also walk into and out of the
-  page on a shallow floor, and things further back are painted behind.
-- **Characters are the scans themselves**, cut out of the paper. Nothing
-  is mirrored, recolored or scaled by depth.
+- **The world is skin.** Side-on 2D stage: a pale, yellowing skin wall
+  behind, a flushed peach-and-pink skin floor in front with jaundiced
+  patches, pores, creases and stray hairs, split by a thick ink horizon.
+  The camera scrolls left and right; you can also walk into and out of the
+  floor, and things further back are painted behind.
+- **Swollen pimples everywhere**, random sizes: domes on the floor (slap
+  one to pop it) and round ones on the wall.
+- **Flat 2D illustration.** The scanned drawings are processed into solid
+  colors, solid ink lines and one consistent thick dark outline
+  (`tools/stylize.mjs`); no pencil texture survives. Everything the game
+  draws itself (`src/ink.js`) uses the same rules.
 - **Floating heads are popsicles**, planted on wooden sticks and swaying.
-- **Props are drawn in the same vocabulary** at runtime (`src/ink.js`):
-  pen-hatched shadows like the ones in the balloon-gang drawing, hair
-  sprouting from the paper, hedges of hair, blue drips, the sticks.
 
 ## Tech stack
 
@@ -28,7 +31,7 @@ framework, no server code, deployed to GitHub Pages like
 | Rendering | Canvas 2D, no engine |
 | Language | Plain JavaScript (ES modules), no framework, no runtime dependencies |
 | Bundler | esbuild: one IIFE bundle targeting ES2019 |
-| Art pipeline | `tools/cutout.mjs` with [sharp](https://sharp.pixelplumbing.com/) (dev only) |
+| Art pipeline | `tools/cutout.mjs` + `tools/stylize.mjs` with [sharp](https://sharp.pixelplumbing.com/) (dev only) |
 | Linting | ESLint 9 (flat config, `eslint.config.js`) |
 | Hosting | GitHub Pages, deployed by GitHub Actions on push to `main` |
 | Runtime | Node 20+ (build only) |
@@ -52,7 +55,7 @@ Toad sits in his corner of the page, starving. Three verbs:
 
 | Verb | Keyboard | Touch | Does |
 |---|---|---|---|
-| Slap | Space | SLAP | Whack whoever is nearest |
+| Slap | Space | SLAP | Whack whoever is nearest, or pop a pimple |
 | Grab | E | GRAB | Pick up / drop / feed Toad / talk |
 | Water | Q | WATER | Splash from your can; walk into blue drips to refill it |
 
@@ -75,17 +78,18 @@ src/config.js        stage size, walkable area, player, colors
 src/roster.js        every character: sprite, size, stick, position, lines; drip spots
 src/story.js         the puzzle chain: what slapping/watering/feeding does to whom
 src/interact.js      the verbs: slap, grab/give/talk, water; carrying; spray and feeding arcs
-src/stage.js         the 2D renderer: paper, horizon, moon, depth-sorted drawing, camera
-src/world.js         entities (cast, items, drips), squash-and-stretch, sway
+src/stage.js         the 2D renderer: skin wall and floor, horizon, depth-sorted drawing, camera
+src/world.js         entities (cast, items, drips, pimples), squash-and-stretch, sway
 src/gates.js         hair hedges: page edges and the two zone gates
-src/ink.js           runtime-drawn props: stick, hatched shadow, hair, drip, eyeball
+src/ink.js           everything drawn at runtime: skin tiles, pimples, stick, shadow, hair, drip, eyeball
 src/player.js        movement, zone bounds, collisions, waddle and slap lunge
 src/controls.js      keyboard, D-pad and verb buttons
 src/sfx.js           procedural sound: slap, splash, gulp, burp, pop, splort
 src/ui/hud.js        objective, can meter, verb prompt, speech bubbles, bursts, end card
 public/              index.html, style.css
-assets/              scans, sprites, paper texture (see assets/README.md)
-tools/cutout.mjs     paper keying + sprite export
+assets/              scans and processed sprites (see assets/README.md)
+tools/cutout.mjs     paper keying, splitting, sprite export
+tools/stylize.mjs    flat-illustration pass: solid colors, solid ink, thick outline
 build.mjs            esbuild build and dev server; cache-busting hashes
 .github/workflows/pages.yml   lint, build, deploy to GitHub Pages
 ```

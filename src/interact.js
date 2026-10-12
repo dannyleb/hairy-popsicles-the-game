@@ -3,7 +3,7 @@
 //   Grab  (E)      pick up / drop / feed Toad / talk
 //   Water (Q)      splash from your can (refill by walking into drips)
 import { CAN_SIZE, REACH } from "./config.js";
-import { collectDrips, floorDist, makeEntity, squash } from "./world.js";
+import { collectDrips, floorDist, makeEntity, popPimple, squash } from "./world.js";
 import { dripTexture } from "./ink.js";
 import { sfx } from "./sfx.js";
 
@@ -39,7 +39,16 @@ export function createInteractions({ world, player, hud, story }) {
   function slap() {
     const target = nearest([...world.people, ...world.items]);
     player.lunge = 0.25;
-    if (!target) return;
+    if (!target) {
+      const zit = nearest(world.pimples.filter((p) => p.kind === "pimple"), -1);
+      if (zit) {
+        sfx.splort();
+        hud.burst("POP!", zit);
+        popPimple(zit);
+        squash(zit, 1.2);
+      }
+      return;
+    }
     sfx.slap();
     squash(target, 1);
     hud.burst("SLAP!", target);

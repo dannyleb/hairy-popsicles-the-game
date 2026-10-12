@@ -1,9 +1,9 @@
 // Everything on the stage is an entity: a drawing with feet at (x, g),
 // optionally on a popsicle stick, lifted `lift` off the floor, with
-// squash-and-stretch, sway and a pen-hatched shadow.
+// squash-and-stretch, sway and a flat contact shadow.
 import { AREA, DEPTH } from "./config.js";
 import { DRIP_SPOTS, ROSTER } from "./roster.js";
-import { dripTexture, tuftTexture } from "./ink.js";
+import { dripTexture, pimpleTexture, poppedTexture, rng, tuftTexture } from "./ink.js";
 import { buildHedges } from "./gates.js";
 
 const DRIP_RESPAWN = 20;
@@ -44,6 +44,40 @@ function tufts() {
   }));
 }
 
+// Swollen pimples everywhere: domes on the floor (slap to pop) and round
+// ones on the skin wall behind. Random sizes, fixed by seed.
+function pimples(people) {
+  const rand = rng(1234);
+  const side = Array.from({ length: 8 }, (_, i) => pimpleTexture(100 + i));
+  const face = Array.from({ length: 6 }, (_, i) => pimpleTexture(200 + i, { faceOn: true }));
+  const popped = Array.from({ length: 4 }, (_, i) => poppedTexture(300 + i));
+  const blocked = [...people.map((p) => [p.x, p.g, p.radius + 1.6]), ...DRIP_SPOTS.map(([x, g]) => [x, g, 1.2]), [0, 6.7, 2]];
+  const floor = [];
+  for (let tries = 0; floor.length < 46 && tries < 2000; tries++) {
+    const x = AREA.minX + rand() * (AREA.maxX - AREA.minX);
+    const g = 0.5 + rand() * (AREA.front - 0.7);
+    if (blocked.some(([bx, bg, r]) => Math.hypot(x - bx, (g - bg) * 2.5) < r)) continue;
+    if (floor.some((p) => Math.hypot(x - p.x, (g - p.g) * 2.5) < 1.2 + p.h)) continue;
+    const h = 0.3 + rand() ** 2.2 * 1.9;
+    const e = makeEntity(side[Math.floor(rand() * side.length)], h, x, g, { kind: "pimple", shadow: false, radius: 0.4 });
+    e.popped = popped[Math.floor(rand() * popped.length)];
+    floor.push(e);
+  }
+  const wall = Array.from({ length: 34 }, () => {
+    const img = face[Math.floor(rand() * face.length)];
+    return { img, x: AREA.minX - 8 + rand() * (AREA.maxX - AREA.minX + 16), y: -0.8 - rand() * 6, size: 0.35 + rand() ** 2 * 2.2 };
+  });
+  return { floor, wall };
+}
+
+export function popPimple(p) {
+  p.kind = "popped";
+  p.img = p.popped;
+  p.h = p.h * 0.6 + 0.15;
+  p.w = p.h * (p.img.width / p.img.height);
+  p.top = p.h;
+}
+
 function drips() {
   const img = dripTexture();
   return DRIP_SPOTS.map(([x, g], i) => ({ ...makeEntity(img, 0.8, x, g, { shadow: false, kind: "drip" }), phase: i, respawn: 0 }));
@@ -51,8 +85,11 @@ function drips() {
 
 export function buildWorld(img) {
   const people = cast(img);
+  const pim = pimples(people);
   return {
     people,
+    pimples: pim.floor,
+    wallPimples: pim.wall,
     byId: Object.fromEntries(people.map((p) => [p.id, p])),
     items: [],
     fx: [],
@@ -88,6 +125,7 @@ export function animateWorld(world, t, dt) {
     wobble(p);
   }
   for (const it of world.items) wobble(it);
+  for (const p of world.pimples) wobble(p);
   for (const d of world.drips) {
     if (d.respawn > 0) {
       d.respawn -= dt;

@@ -5,12 +5,13 @@
 //
 // For each scan: key out the paper with a contiguous flood fill from the
 // edges (so pale skin inside an ink outline survives), split what's left
-// into separate drawings, and write each one as a trimmed transparent WebP
-// to assets/sprites/<name>.webp, <name>-2.webp, ... (largest first).
-// Also writes assets/textures/paper.jpg, a blank patch of real paper for
-// the ground.
+// into separate drawings, flatten each into 2D illustration style (solid
+// colors, solid ink, thick outline; see stylize.mjs) and write it as a
+// trimmed transparent WebP to assets/sprites/<name>.webp, <name>-2.webp, ...
+// (largest first).
 import sharp from "sharp";
-import { mkdirSync, readdirSync } from "node:fs";
+import { distance, stylize, STYLE } from "./stylize.mjs";
+import { mkdirSync, readdirSync, rmSync } from "node:fs";
 import { basename, extname, join } from "node:path";
 
 const SRC = "assets/concept";
@@ -25,13 +26,25 @@ const GROUP = 14;       // px: strokes closer than this belong to one drawing
 const MIN_SHARE = 0.02;  // drop pieces smaller than this share of the biggest
 // Scans where figures stand on a drawn ground line; the game draws its own.
 const GROUND_LINES = new Set(["balloon-gang"]);
+// Scans with a colored-pencil glow around the figure: key it out too.
+const HALOS = new Set(["sweats", "roast", "tendrils"]);
+const HALO_FAR = 60;
+// Scans drawn inside a scene: keep only the figure, found by its color
+// (on a smoothed copy), with gaps closed and holes filled.
+const ISOLATE = {
+  toad: (r, g, b) => {
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+    if (!mx || (mx - mn) / mx < 0.3) return false;
+    const hue = g === mx ? 60 * ((b - r) / (mx - mn)) + 120 : r === mx ? 60 * ((g - b) / (mx - mn)) : 999;
+    return hue >= 52 && hue <= 170;
+  },
+};
+const ISOLATE_CLOSE = 40;
 
-async function load(file) {
-  const { data, info } = await sharp(file)
-    .resize(WORK, WORK, { fit: "inside" })
-    .removeAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+async function load(file, median = 0) {
+  let img = sharp(file).resize(WORK, WORK, { fit: "inside" }).removeAlpha();
+  if (median) img = img.median(median);
+  const { data, info } = await img.raw().toBuffer({ resolveWithObject: true });
   return { data, w: info.width, h: info.height };
 }
 
@@ -47,14 +60,14 @@ function paperColor({ data, w, h }) {
   return ch.map((c) => c.sort((a, b) => a - b)[c.length >> 1]);
 }
 
-function keyPaper(img, paper) {
+function keyPaper(img, paper, far = FAR) {
   const { data, w, h } = img;
   const bg = new Uint8Array(w * h);
   const queue = new Int32Array(w * h);
   let head = 0, tail = 0;
   const near = (p) => {
     const i = p * 3;
-    return Math.abs(data[i] - paper[0]) < FAR && Math.abs(data[i + 1] - paper[1]) < FAR && Math.abs(data[i + 2] - paper[2]) < FAR;
+    return Math.abs(data[i] - paper[0]) < far && Math.abs(data[i + 1] - paper[1]) < far && Math.abs(data[i + 2] - paper[2]) < far;
   };
   const smooth = (a, b) => {
     const i = a * 3, j = b * 3;
@@ -93,6 +106,44 @@ function keyPaper(img, paper) {
       if (y < h - 1) visit(p + w);
     }
     if (tail >= minHole) for (let i = 0; i < tail; i++) bg[queue[i]] = 1;
+  }
+  return bg;
+}
+
+function isolate(img, test) {
+  const { data, w, h } = img;
+  const n = w * h;
+  const m = new Uint8Array(n);
+  for (let p = 0; p < n; p++) m[p] = test(data[p * 3], data[p * 3 + 1], data[p * 3 + 2]) ? 1 : 0;
+  // Morphological close: grow, then shrink back.
+  const out = distance(m, w, h);
+  const grown = new Uint8Array(n);
+  for (let p = 0; p < n; p++) grown[p] = out[p] <= ISOLATE_CLOSE ? 0 : 1;
+  const back = distance(grown, w, h);
+  const keep = new Uint8Array(n);
+  for (let p = 0; p < n; p++) keep[p] = back[p] > ISOLATE_CLOSE ? 1 : 0;
+  // Fill holes: anything not reachable from the border without crossing keep.
+  const bg = new Uint8Array(n), queue = new Int32Array(n);
+  let head = 0, tail = 0;
+  const seed = (p) => { if (!keep[p] && !bg[p]) { bg[p] = 1; queue[tail++] = p; } };
+  for (let x = 0; x < w; x++) { seed(x); seed((h - 1) * w + x); }
+  for (let y = 0; y < h; y++) { seed(y * w); seed(y * w + w - 1); }
+  while (head < tail) {
+    const p = queue[head++], x = p % w, y = (p / w) | 0;
+    if (x > 0) seed(p - 1);
+    if (x < w - 1) seed(p + 1);
+    if (y > 0) seed(p - w);
+    if (y < h - 1) seed(p + w);
+  }
+  return bg;
+}
+
+// Pen lines are never background, even where the smoothed copy blurred
+// them into the glow.
+function keepInk(bg, { data }) {
+  for (let p = 0; p < bg.length; p++) {
+    const i = p * 3;
+    if (0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2] < 90) bg[p] = 0;
   }
   return bg;
 }
@@ -168,7 +219,7 @@ function trimGroundLine(img, fg, label, piece) {
   let lineTop = piece.y1;
   for (const [y, span] of spans) if (span >= maxSpan * 0.9 && y < lineTop) lineTop = y;
   const cut = lineTop - 3;
-  const out = { ...piece, x0: w, x1: 0, y0: img.h, y1: 0 };
+  const out = { ...piece, x0: w, x1: 0, y0: img.h, y1: 0, cutY: cut };
   for (let x = piece.x0; x <= piece.x1; x++) {
     let n = 0, top = -1, bottom = -1;
     for (let y = piece.y0; y <= cut; y++) if (inside(x, y)) { n++; if (top < 0) top = y; bottom = y; }
@@ -181,7 +232,7 @@ function trimGroundLine(img, fg, label, piece) {
 
 async function exportPiece(img, fg, label, piece, outFile) {
   const { data, w } = img;
-  const pad = 4;
+  const pad = STYLE.outline + 3;
   const x0 = Math.max(0, piece.x0 - pad), y0 = Math.max(0, piece.y0 - pad);
   const x1 = Math.min(w - 1, piece.x1 + pad), y1 = Math.min(img.h - 1, piece.y1 + pad);
   const cw = x1 - x0 + 1, chh = y1 - y0 + 1;
@@ -190,23 +241,14 @@ async function exportPiece(img, fg, label, piece, outFile) {
     for (let x = 0; x < cw; x++) {
       const p = (y + y0) * w + (x + x0), o = (y * cw + x) * 4;
       rgba[o] = data[p * 3]; rgba[o + 1] = data[p * 3 + 1]; rgba[o + 2] = data[p * 3 + 2];
-      rgba[o + 3] = fg[p] && label[p] === piece.id ? 255 : 0;
+      rgba[o + 3] = fg[p] && label[p] === piece.id && !(piece.cutY && y + y0 > piece.cutY) ? 255 : 0;
     }
   }
-  await sharp(rgba, { raw: { width: cw, height: chh, channels: 4 } })
+  const flat = await stylize(rgba, cw, chh);
+  await sharp(flat, { raw: { width: cw, height: chh, channels: 4 } })
     .resize(SPRITE, SPRITE, { fit: "inside", withoutEnlargement: true })
     .webp({ quality: 86, alphaQuality: 100 })
     .toFile(outFile);
-}
-
-async function paperPatch(file, out) {
-  const meta = await sharp(file).metadata();
-  const size = Math.min(520, Math.floor(Math.min(meta.width, meta.height) / 4));
-  await sharp(file)
-    .extract({ left: 60, top: 60, width: size, height: size })
-    .resize(512, 512)
-    .jpeg({ quality: 82 })
-    .toFile(out);
 }
 
 const only = process.argv.slice(2);
@@ -215,22 +257,23 @@ const files = readdirSync(SRC)
   .filter((f) => !only.length || only.includes(basename(f, extname(f))));
 
 mkdirSync(OUT, { recursive: true });
-mkdirSync("assets/textures", { recursive: true });
 
 for (const f of files) {
   const name = basename(f, extname(f));
   const img = await load(join(SRC, f));
   const paper = paperColor(img);
-  const bg = keyPaper(img, paper);
+  // Halo scans are keyed on a smoothed copy, so the pencil glow reads as
+  // one pale area the flood fill can take out.
+  const bg = ISOLATE[name]
+    ? isolate(await load(join(SRC, f), 15), ISOLATE[name])
+    : HALOS.has(name)
+      ? keepInk(keyPaper(await load(join(SRC, f), 9), paper, HALO_FAR), img)
+      : keyPaper(img, paper);
   const { fg, label, pieces } = splitDrawings(bg, img.w, img.h);
+  for (const old of readdirSync(OUT)) if (old === `${name}.webp` || old.startsWith(`${name}-`)) rmSync(join(OUT, old));
   for (let i = 0; i < pieces.length; i++) {
     const piece = GROUND_LINES.has(name) ? trimGroundLine(img, fg, label, pieces[i]) : pieces[i];
     await exportPiece(img, fg, label, piece, join(OUT, i ? `${name}-${i + 1}.webp` : `${name}.webp`));
   }
   console.log(`  ${name}: paper rgb(${paper.join(",")}), ${pieces.length} piece(s)`);
-}
-
-if (!only.length) {
-  await paperPatch(join(SRC, "melter.jpg"), "assets/textures/paper.jpg");
-  console.log("  textures/paper.jpg from melter.jpg");
 }

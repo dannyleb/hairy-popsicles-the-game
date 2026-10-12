@@ -1,33 +1,20 @@
-// Flat 2D renderer on a plain canvas. The page is the scanned paper,
-// tiled; a wobbly ink horizon line separates sky from floor; everything on
-// the floor is painted back-to-front by depth.
+// Flat 2D renderer on a plain canvas. The world is skin: a pale,
+// yellowing skin wall behind, a flushed peach skin floor in front, split by
+// a wobbly ink horizon; everything on the floor is painted back-to-front.
 import { AREA, INK, VIEW } from "./config.js";
-import { shadowTexture, stickTexture } from "./ink.js";
+import { FLOOR_SKIN, WALL_SKIN, shadowTexture, skinTile, stickTexture } from "./ink.js";
 import { gateScale } from "./gates.js";
 
 const SHADOW = shadowTexture();
 const STICK = stickTexture();
 
-// Mirror the paper patch into a 2x2 tile so it repeats without seams.
-function seamlessTile(img) {
-  const s = img.width;
-  const c = document.createElement("canvas");
-  c.width = c.height = s * 2;
-  const ctx = c.getContext("2d");
-  for (const [sx, sy] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
-    ctx.save();
-    ctx.translate(sx < 0 ? s * 2 : 0, sy < 0 ? s * 2 : 0);
-    ctx.scale(sx, sy);
-    ctx.drawImage(img, 0, 0);
-    ctx.restore();
-  }
-  return c;
-}
+const TILE_UNITS = 7; // world units per skin tile
 
-export function createStage(canvas, paperImg) {
+export function createStage(canvas) {
   const ctx = canvas.getContext("2d");
-  const paper = seamlessTile(paperImg);
-  let pattern = null;
+  const floorTile = skinTile(FLOOR_SKIN);
+  const wallTile = skinTile(WALL_SKIN);
+  let floorPat = null, wallPat = null;
   let W = 0, H = 0, U = 40;
   const cam = { x: 0, g: 4 };
 
@@ -42,7 +29,8 @@ export function createStage(canvas, paperImg) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.imageSmoothingQuality = "high";
     U = Math.min(H / VIEW.height, W / VIEW.minWidth);
-    pattern = ctx.createPattern(paper, "repeat");
+    floorPat = ctx.createPattern(floorTile, "repeat");
+    wallPat = ctx.createPattern(wallTile, "repeat");
   }
 
   const X = (x) => (x - cam.x) * U + W / 2;
@@ -99,11 +87,22 @@ export function createStage(canvas, paperImg) {
   }
 
   function draw(world, player, carried) {
-    // Paper, scrolling with the camera.
-    const tile = 9 * U / paper.width;
-    pattern.setTransform(new DOMMatrix().translate(-cam.x * U + W / 2, -cam.g * U + H / 2).scale(tile));
-    ctx.fillStyle = pattern;
-    ctx.fillRect(0, 0, W, H);
+    // Skin, scrolling with the camera: wall above the horizon, floor below.
+    const hy = Y(0);
+    const m = new DOMMatrix().translate(-cam.x * U + W / 2, -cam.g * U + H / 2).scale(TILE_UNITS * U / floorTile.width);
+    wallPat.setTransform(m);
+    floorPat.setTransform(m);
+    ctx.fillStyle = wallPat;
+    ctx.fillRect(0, 0, W, Math.max(0, hy));
+    ctx.fillStyle = floorPat;
+    ctx.fillRect(0, Math.max(0, hy), W, H);
+
+    // Pimples swelling out of the wall.
+    for (const p of world.wallPimples) {
+      if (!onScreen(p.x, p.size)) continue;
+      const s = p.size * U;
+      ctx.drawImage(p.img, X(p.x) - s / 2, Y(p.y) - s / 2, s, s);
+    }
 
     // The moon, drifting slowly behind everything.
     if (world.moon) {
@@ -113,7 +112,7 @@ export function createStage(canvas, paperImg) {
 
     // Horizon: a hand-wobbly ink line.
     ctx.strokeStyle = INK;
-    ctx.lineWidth = 2.2;
+    ctx.lineWidth = 5;
     ctx.lineCap = "round";
     ctx.beginPath();
     horizon.forEach((j, i) => {
@@ -143,6 +142,7 @@ export function createStage(canvas, paperImg) {
     for (const e of world.people) list.push([e.g, () => drawEntity(e)]);
     for (const e of world.items) if (e !== carried) list.push([e.g, () => drawEntity(e)]);
     for (const e of world.drips) list.push([e.g, () => drawEntity(e)]);
+    for (const e of world.pimples) list.push([e.g, () => drawEntity(e)]);
     list.push([player.g, () => drawEntity(player)]);
     if (carried) list.push([player.g + 0.001, () => drawEntity(carried)]);
     for (const e of world.fx) list.push([e.g + 0.002, () => drawEntity(e)]);
