@@ -135,12 +135,20 @@ export function createStage(canvas) {
     ctx.save();
     ctx.translate(X(e.x), Y(e.g) - e.lift * U);
     ctx.rotate(e.rot);
-    ctx.scale((1 + s * 0.25) * e.scale, (1 - s * 0.22) * e.scale * e.scaleY);
+    const br = e.breath || 0;
+    ctx.scale((1 + s * 0.25 - br * 0.5) * e.scale * (e.flip ? -1 : 1), (1 - s * 0.22 + br) * e.scale * e.scaleY);
     if (e.stickH) {
+      // Heads on sticks: the stick stays put, the head bobs and tilts on top.
       const sw = e.h * 0.12, sl = e.stickH + e.h * 0.25;
       ctx.drawImage(STICK, -sw / 2 * U, -sl * U, sw * U, sl * U);
+      ctx.translate(0, -(e.stickH + e.h * 0.25) * U);
+      ctx.rotate(e.headTilt || 0);
+      ctx.translate(0, -(e.headBob || 0) * U);
+      ctx.drawImage(e.img, -e.w / 2 * U, -e.h * 0.75 * U, e.w * U, e.h * U);
+    } else {
+      ctx.rotate(e.headTilt || 0);
+      ctx.drawImage(e.img, -e.w / 2 * U, -e.h * U, e.w * U, e.h * U);
     }
-    ctx.drawImage(e.img, -e.w / 2 * U, -(e.stickH + e.h) * U, e.w * U, e.h * U);
     ctx.restore();
   }
 

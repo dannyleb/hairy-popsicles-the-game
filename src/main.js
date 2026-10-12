@@ -9,6 +9,7 @@ import { createStory } from "./story.js";
 import { createInteractions } from "./interact.js";
 import { createPus } from "./pus.js";
 import { createScraps } from "./scraps.js";
+import { createLife } from "./life.js";
 import { CYCLE_SECONDS, START_PHASE } from "./daynight.js";
 import { AREA, POCKETS } from "./config.js";
 import { updateGates } from "./gates.js";
@@ -72,6 +73,7 @@ async function boot() {
   const pus = createPus({ world, player, hud });
   const scraps = createScraps({ world, player, hud });
   const verbs = createInteractions({ world, player, hud, story, pus, scraps });
+  const life = createLife({ world, player, hud, story, scraps });
   hud.setPockets(0, POCKETS);
 
   window.addEventListener("resize", stage.resize);
@@ -96,6 +98,7 @@ async function boot() {
 
   let last = performance.now();
   let running = false;
+  let lastInput = { moving: false, x: 0 };
   function tick(now) {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
@@ -103,6 +106,7 @@ async function boot() {
 
     if (running) {
       const input = verbs.steer(poll(), dt);
+      lastInput = input;
       updatePlayer(player, input, dt, world.people, world.gates);
       verbs.update(input, dt);
       pus.update(dt);
@@ -112,6 +116,7 @@ async function boot() {
     }
     updateGates(world.gates, dt);
     animateWorld(world, t, dt);
+    life.update(dt, t, running ? lastInput : { moving: false, x: 0 });
     if (peek) {
       peek.t -= dt;
       stage.follow(peek, dt);

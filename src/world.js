@@ -129,6 +129,8 @@ export function animateWorld(world, t, dt) {
   for (const p of world.pimples) wobble(p);
   for (const g of world.globs || []) wobble(g);
   for (const d of world.drips) {
+    wobble(d);
+    if (d.falling) continue;
     if (d.respawn > 0) {
       d.respawn -= dt;
       if (d.respawn <= 0) d.visible = true;
@@ -141,12 +143,14 @@ export function animateWorld(world, t, dt) {
 // Returns how many drips the player walked into this frame.
 export function collectDrips(world, pos, room) {
   let got = 0;
-  for (const d of world.drips) {
-    if (!d.visible || got >= room) continue;
+  for (let i = world.drips.length - 1; i >= 0; i--) {
+    const d = world.drips[i];
+    if (!d.visible || d.falling || got >= room) continue;
     if (floorDist(pos, d) < 1.1) {
+      got++;
+      if (d.temp) { world.drips.splice(i, 1); continue; }
       d.visible = false;
       d.respawn = DRIP_RESPAWN;
-      got++;
     }
   }
   return got;

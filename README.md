@@ -25,6 +25,11 @@ framework, no server code, deployed to GitHub Pages like
   stars and glowing pus-flies. The sun is a giant pimple; Snoot's crescent
   is the moon. The ground layer is tinted separately from the sky so the
   moon and stars stay bright.
+- **Nobody is a static cut-out** (`src/life.js`): everyone breathes (Toad
+  heaves), heads bob and tilt on their sticks toward you and shudder now
+  and then, Shiv and Balloon Man wander, Little Guy hops, Fairy hovers,
+  criers/sweaters/droolers shed drops that land as collectible teardrops,
+  and people mutter about themselves as you pass (`mutter` in roster.js).
 - **Swollen pimples everywhere**, random sizes: domes on the floor and
   round ones on the wall.
 - **Traced 2D illustration.** The scans aren't shown as-is: each one is
@@ -118,6 +123,7 @@ src/roster.js        every character: sprite, size, stick, position, lines; drip
 src/story.js         Toad's belly and appetite stages, big meals, who says what
 src/interact.js      the verbs: slap, grab/give/talk, water; carrying; spray and feeding arcs
 src/daynight.js      day/night cycle: sky and world tints, stars, sun/moon timing
+src/life.js          idle life: breathing, head bob/tilt, wandering, hops, shed drops, mutters
 src/stage.js         the 2D renderer: skin wall and floor, horizon, depth-sorted drawing, camera
 src/world.js         entities (cast, items, drips, pimples), squash-and-stretch, sway
 src/gates.js         hair hedges: page edges and the zone gates (evaporate when opened)

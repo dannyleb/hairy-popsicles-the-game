@@ -93,6 +93,7 @@ export function createHud(stage) {
     },
 
     update(dt) {
+      const card = $("objective").getBoundingClientRect();
       for (let i = pinned.length - 1; i >= 0; i--) {
         const p = pinned[i];
         p.age += dt;
@@ -102,6 +103,8 @@ export function createHud(stage) {
           continue;
         }
         const s = project(p.target, p.lift);
+        // Keep bubbles from sliding under the objective card.
+        if (s.x > card.left - 80 && s.x < card.right + 80) s.y = Math.max(s.y, card.bottom + 44);
         const fade = Math.min(1, (p.life - p.age) / 0.3);
         p.el.style.opacity = fade;
         p.el.style.transform = `translate(${s.x}px, ${s.y - p.rise * (p.age / p.life)}px) translate(-50%, -100%)`;
