@@ -9,7 +9,7 @@ import { createStory } from "./story.js";
 import { createInteractions } from "./interact.js";
 import { createPus } from "./pus.js";
 import { createScraps } from "./scraps.js";
-import { POCKETS } from "./config.js";
+import { AREA, POCKETS } from "./config.js";
 import { updateGates } from "./gates.js";
 import { eyeballTexture } from "./ink.js";
 import { sfx, unlock } from "./sfx.js";
@@ -75,10 +75,19 @@ async function boot() {
   window.addEventListener("resize", stage.resize);
   stage.resize();
   initControls();
+  // Tap/click the stage: small things first (pimples, scraps, items),
+  // then characters, else open ground.
   document.getElementById("gameCanvas").addEventListener("pointerdown", (e) => {
     if (!running) return;
-    const zit = stage.hit(world.pimples.filter((p) => p.kind === "pimple"), e.clientX, e.clientY);
-    if (zit) verbs.tapPimple(zit);
+    e.preventDefault();
+    const small = [
+      ...world.pimples.filter((p) => p.kind === "pimple"),
+      ...world.scraps.filter((s) => !s.gone),
+      ...world.items.filter((i) => !i.carried && !i.eaten),
+    ];
+    const hit = stage.hit(small, e.clientX, e.clientY, 16) || stage.hit(world.people, e.clientX, e.clientY, 0);
+    const p = stage.toWorld(e.clientX, e.clientY);
+    verbs.tap(hit, p.x, Math.max(0.4, Math.min(AREA.front, p.g)));
   });
 
   if (new URLSearchParams(location.search).has("debug")) window.game = { player, world, story, pus, stage, scraps };
@@ -91,7 +100,7 @@ async function boot() {
     const t = now / 1000;
 
     if (running) {
-      const input = verbs.steer(poll());
+      const input = verbs.steer(poll(), dt);
       updatePlayer(player, input, dt, world.people, world.gates);
       verbs.update(input, dt);
       pus.update(dt);

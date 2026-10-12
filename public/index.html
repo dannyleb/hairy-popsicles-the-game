@@ -11,6 +11,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Rubik+Wet+Paint&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <script>
+    // Touch devices get the mobile UI (tap to move, compact HUD).
+    if (matchMedia("(pointer: coarse)").matches || (navigator.maxTouchPoints > 0 && matchMedia("(hover: none)").matches))
+      document.documentElement.classList.add("touch");
+  </script>
 </head>
 <body>
   <div id="app">
@@ -30,7 +35,7 @@
       <canvas id="gameCanvas"></canvas>
       <div id="worldLayer"></div>
       <div id="toast"></div>
-      <div id="verbPrompt"></div>
+      <div id="verbPrompt" data-verb="grab"></div>
       <div id="dpad" aria-label="Direction pad">
         <div class="arrow up"></div><div class="arrow right"></div><div class="arrow down"></div><div class="arrow left"></div>
         <div class="hub"></div>
@@ -61,10 +66,17 @@
       </div>
       <h1>Hairy Popsicles</h1>
       <p>Toad is hungry. He's always hungry. Fill him up.</p>
-      <div class="controlsGrid">
-        <div><strong>Keyboard</strong><br/>WASD / arrows &mdash; walk &middot; Shift &mdash; run<br/>Space &mdash; slap<br/>E &mdash; grab / give / talk<br/>Q &mdash; water</div>
-        <div><strong>Touch</strong><br/>D-pad &mdash; walk<br/>SLAP &middot; GRAB &middot; WATER buttons</div>
-        <div class="popTip"><strong>Feed Toad</strong> &mdash; walk over crumbs and hairs, swat flies (Space), then press E next to Toad. Fill his belly to open new ground.<br/><strong>Pop pimples</strong> &mdash; tap or click one, or walk up and press E / Space. Slurp the pus for points.</div>
+      <div class="controlsGrid forDesk">
+        <div><strong>Keyboard</strong><br/>WASD / arrows &mdash; walk (or click where to go)<br/>Shift &mdash; run<br/>Space &mdash; slap / swat<br/>E &mdash; feed / grab / talk<br/>Q &mdash; water</div>
+        <div class="popTip"><strong>Feed Toad</strong> &mdash; walk over crumbs and hairs, swat flies, then press E next to Toad. Fill his belly to open new ground.<br/><strong>Pop pimples</strong> &mdash; click one, or walk up and press E / Space. Slurp the pus for points.</div>
+      </div>
+      <div class="controlsGrid forTouch">
+        <div class="popTip">
+          <strong>Tap anywhere</strong> to walk there.<br/>
+          <strong>Tap Toad</strong> to feed him, <strong>a fly</strong> to swat it, <strong>a pimple</strong> to pop it, <strong>anyone</strong> to talk.<br/>
+          Walk over crumbs and hairs to pocket them. Fill Toad's belly to open new ground.<br/>
+          <strong>SLAP</strong> and <strong>WATER</strong> buttons for the rest.
+        </div>
       </div>
       <button id="pressStart" class="chunk" disabled>LOADING&hellip;</button>
       <button class="musicBtn" id="musicMenu" hidden aria-label="Turn music off"></button>

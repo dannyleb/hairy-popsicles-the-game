@@ -146,6 +146,18 @@ export function createStage(canvas) {
       ctx.restore();
     }
 
+    // Where you last tapped to walk.
+    const tm = world.tapMark;
+    if (tm && tm.t < 0.7) {
+      tm.t += 1 / 60;
+      const k = tm.t / 0.7;
+      ctx.strokeStyle = `rgba(46, 22, 22, ${0.8 * (1 - k)})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(X(tm.x), Y(tm.g), (0.3 + k * 0.5) * U, (0.12 + k * 0.2) * U, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
     // Everything else, back to front.
     const list = [];
     for (const c of world.gates.edges) list.push([c.g, () => drawClump(c, 1)]);
@@ -170,6 +182,7 @@ export function createStage(canvas) {
   return {
     resize, follow, draw,
     toScreen: (x, g, lift) => ({ x: X(x), y: Y(g) - lift * U }),
+    toWorld: (sx, sy) => ({ x: (sx - W / 2) / U + cam.x, g: (sy - H / 2) / U + cam.g }),
     // Frontmost entity whose drawing covers screen point (sx, sy), with a
     // little slack so small pimples are easy to tap.
     hit(list, sx, sy, slack = 14) {

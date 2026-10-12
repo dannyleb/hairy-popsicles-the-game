@@ -5,7 +5,7 @@
 //   Tap/click a pimple to walk over and pop it
 // Crumbs, hairs and dead flies go in your pockets just by walking over them
 // (scraps.js); E next to Toad feeds him everything in your pockets.
-import { CAN_SIZE, REACH } from "./config.js";
+import { CAN_SIZE, DEPTH, REACH } from "./config.js";
 import { collectDrips, floorDist, makeEntity, popPimple, squash } from "./world.js";
 import { dripTexture } from "./ink.js";
 import { sfx } from "./sfx.js";
@@ -203,32 +203,71 @@ export function createInteractions({ world, player, hud, story, pus, scraps }) {
     }
   }
 
-  // Tap/click a pimple: walk over to it and pop it.
+  // Tap/click to move: walk to a spot, or walk to a thing and use it.
   let walkTo = null;
-  function tapPimple(zit) {
-    if (zit.kind !== "pimple") return;
-    if (floorDist(player, zit) - zit.radius < 1.4) pop(zit);
-    else walkTo = zit;
+  function goTo(x, g, target = null, act = null) {
+    walkTo = { x, g, target, act, best: Infinity, stall: 0 };
+    world.tapMark = { x, g, t: 0 };
   }
 
-  // Steers the player toward a tapped pimple; any real input cancels it.
-  function steer(input) {
+  // Where to stand to use `e`, and how close counts as arrived.
+  function standFor(e) {
+    if (e.kind === "pimple") return [e.x - 0.7, e.g + 0.15, 1.1];
+    if (e.kind === "fly") return [e.x - 0.6, e.g, 1.4];
+    if (world.items.includes(e)) return [e.x, e.g + 0.1, 0.6];
+    const side = player.x < e.x ? -1 : 1;
+    return [e.x + side * (e.radius + 0.6), e.g + 0.3, REACH * 0.7];
+  }
+
+  function act(w) {
+    const e = w.target;
+    if (w.act === "pop") { if (e.kind === "pimple") { player.lunge = 0.25; pop(e); } return; }
+    if (w.act === "swat") { if (!e.dead && !e.gone) swat(e); return; }
+    if (w.act === "grab") { grab(); return; }
+    if (w.act === "talk") {
+      if (e === story.toad) { grab(); return; }
+      sfx.grunt();
+      say(e, story.talk(e));
+    }
+  }
+
+  // e: what was tapped (or null for open ground); x, g: the floor spot.
+  function tap(e, x, g) {
+    if (!e) return goTo(x, g);
+    const [sx, sg] = standFor(e);
+    if (e.kind === "pimple") return goTo(sx, sg, e, "pop");
+    if (e.kind === "fly" && !e.dead) return goTo(sx, sg, e, "swat");
+    if (world.items.includes(e)) return goTo(sx, sg, e, "grab");
+    if (e === story.toad || world.people.includes(e)) return goTo(sx, sg, e, "talk");
+    goTo(e.x, e.g);
+  }
+
+  // Turns a pending walk into movement input; real input cancels it.
+  function steer(input, dt) {
     if (!walkTo) return input;
-    if (input.moving || walkTo.kind !== "pimple") { walkTo = null; return input; }
-    const dx = walkTo.x - 0.7 - player.x, dg = walkTo.g + 0.15 - player.g;
-    if (Math.abs(dx) < 0.35 && Math.abs(dg) < 0.25) {
-      const z = walkTo;
+    if (input.moving) { walkTo = null; return input; }
+    const w = walkTo, e = w.target;
+    let reach = 0.3;
+    if (e) {
+      if ((w.act === "pop" && e.kind !== "pimple") || e.gone || (w.act === "swat" && e.dead)) { walkTo = null; return input; }
+      [w.x, w.g, reach] = standFor(e);
+    }
+    const dx = w.x - player.x, dg = w.g - player.g;
+    const d = Math.hypot(dx, dg * DEPTH);
+    const near = e ? floorDist(player, e) - (e.radius || 0) < reach : d < reach;
+    if (d < w.best - 0.02) { w.best = d; w.stall = 0; } else w.stall += dt;
+    if (near || d < 0.25 || w.stall > 0.6) {
       walkTo = null;
-      pop(z);
+      if (e && (near || floorDist(player, e) - (e.radius || 0) < REACH)) act(w);
       return input;
     }
     const len = Math.hypot(dx, dg * 2) || 1;
-    return { ...input, x: dx / len, z: (dg * 2) / len, moving: true };
+    return { ...input, x: dx / len, z: (dg * 2) / len, moving: true, run: d > 6 };
   }
 
   return {
     get carrying() { return carrying; },
-    tapPimple,
+    tap,
     steer,
 
     update(input, dt) {

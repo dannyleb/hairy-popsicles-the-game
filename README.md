@@ -65,7 +65,14 @@ Toad sits in his corner of the page, starving. Three verbs:
 | Grab | E | GRAB | Feed Toad / pick up / drop / talk |
 | Water | Q | WATER | Splash from your can; walk into blue teardrops to refill it |
 
-Walk with WASD / arrows (Shift to run) or the D-pad.
+Walk with WASD / arrows (Shift to run), or click where to go.
+
+**On phones** (detected automatically, `html.touch`) the UI switches to
+tap-to-move: tap anywhere and the character walks there (running if it's
+far); tap Toad to feed him, a fly to swat it, a pimple to pop it, anyone to
+talk. There's no D-pad; the context prompt ("FEED TOAD (6)", "TALK", ...)
+is itself the action button, next to round SLAP and WATER buttons, and the
+top HUD is compacted. The title screen shows touch instructions.
 
 **Feeding Toad.** Walk over crumbs and curly pubic hairs to pocket them;
 swat house flies out of the air (Space) and pick them up. Pockets hold 12.

@@ -28,6 +28,8 @@ function bindPadButton(el, dir) {
 
 export function initControls() {
   for (const dir of ["up", "down", "left", "right"]) bindPadButton(document.querySelector(`#dpad .${dir}`), dir);
+  // No long-press menus on touch.
+  window.addEventListener("contextmenu", (e) => e.preventDefault());
   for (const el of document.querySelectorAll("[data-verb]")) {
     el.addEventListener("pointerdown", (e) => { e.preventDefault(); pressed.add(el.dataset.verb); });
   }
