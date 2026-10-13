@@ -51,6 +51,13 @@ framework, no server code, deployed to GitHub Pages like
   peach; small accents stay (blood red, drip blue, ink). The world is a
   dustier, deeper flesh so the cast reads on top of it.
 - **Floating heads are popsicles**, planted on wooden sticks and swaying.
+- **Visual hierarchy.** Backdrop sits back so the eye goes to what you can
+  use: a haze over the skin wall and its pimples (the sun and moon stay
+  crisp), softer ink on the distant hills, and faded hair along the horizon,
+  the front edge and the floor (the side walls and gates, which block you,
+  stay solid). Pickups bob gently over a small shadow. Up top, one message
+  at a time: a tip steps aside while a banner shows, new tips and mutters
+  wait their turn, and at most 4 floating numbers show at once.
 
 ## Tech stack
 

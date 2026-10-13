@@ -23,11 +23,21 @@ export function createHud(stage) {
     el.querySelector(".bTitle").textContent = title;
     el.querySelector(".bSub").textContent = sub;
     el.classList.add("show");
+    $("tip").classList.add("ducked"); // one message up top at a time
     setTimeout(() => {
       el.classList.remove("show");
-      setTimeout(() => { bannerQueue.shift(); nextBanner(); }, 350);
+      setTimeout(() => {
+        bannerQueue.shift();
+        if (!bannerQueue.length) $("tip").classList.remove("ducked");
+        nextBanner();
+      }, 350);
     }, 2600);
   }
+
+  // Floating "+1"s: a handful at most, so a big burst doesn't bury the
+  // screen in numbers (the oldest go first).
+  const MAX_FLOATS = 4;
+  const floats = [];
 
   const lastBelly = { width: "", label: "" };
 
@@ -121,6 +131,22 @@ export function createHud(stage) {
       el.textContent = text;
       el.style.color = color;
       pin(el, target, 0.9, 0.2, 55);
+      for (let i = floats.length - 1; i >= 0; i--) if (!floats[i].isConnected) floats.splice(i, 1);
+      floats.push(el);
+      while (floats.length > MAX_FLOATS) {
+        const old = floats.shift();
+        const p = pinned.find((q) => q.el === old);
+        if (p) p.life = p.age; // retire it on the next update
+      }
+    },
+
+    // Something already talking up top (a banner or a tip)? Then mutters
+    // and new tips wait their turn.
+    get busy() {
+      return $("banner").classList.contains("show") || $("tip").classList.contains("show");
+    },
+    get bannerUp() {
+      return bannerQueue.length > 0;
     },
 
     // A banner that slides down from the top: achievements, album pages,

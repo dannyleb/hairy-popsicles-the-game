@@ -147,7 +147,7 @@ export function createTips({ progress, hud, story, scraps, upgrades, isNight, wo
         if (current.done() || shownFor > SHOW) hide();
         return;
       }
-      if (elapsed < FIRST || since < GAP) return;
+      if (elapsed < FIRST || since < GAP || hud.bannerUp) return;
       const tip = TIPS.find((t) => !progress.tipSeen(t.id) && t.when() && !t.done());
       if (tip) show(tip);
     },

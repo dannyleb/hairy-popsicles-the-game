@@ -20,6 +20,7 @@ const RESPAWN_SLOW = { toenail: 1.5, dropping: 2.5 }; // rare things come back s
 const FOUND = { toenail: "toenail!", dropping: "mouse droppings!!" };
 const STAT = { pube: "hairs", crumb: "crumbs", fly: "fliesPocketed", toenail: "toenails", dropping: "droppings" };
 const PICK_RADIUS = 1;
+const BOB = 0.12; // pickups bob gently above their shadow, so they read as "take me"
 
 export function createScraps({ world, player, hud, progress, upgrades }) {
   const rand = rng(4242);
@@ -56,7 +57,8 @@ export function createScraps({ world, player, hud, progress, upgrades }) {
   function make(kind, zone) {
     const size = { crumb: 0.62 + rand() * 0.22, pube: 0.5 + rand() * 0.12, fly: 0.85, toenail: 0.68 + rand() * 0.08, dropping: 0.7 }[kind];
     const pic = kind === "fly" ? img.flyUp : img[kind][Math.floor(rand() * img[kind].length)];
-    const s = makeEntity(pic, size, 0, 0, { kind, zone, shadow: kind === "fly", radius: 0.3 });
+    const s = makeEntity(pic, size, 0, 0, { kind, zone, shadow: true, radius: 0.3 });
+    s.bobPhase = world.scraps.length * 2.4; // spread out, without touching the seeded layout
     place(s);
     world.scraps.push(s);
   }
@@ -149,6 +151,8 @@ export function createScraps({ world, player, hud, progress, upgrades }) {
         if (s.kind === "fly") {
           if (s.dead && s.lift > 0) s.lift = Math.max(0, s.lift - dt * 6);
           else flyUpdate(s, dt, t);
+        } else {
+          s.lift = BOB * (0.5 + 0.5 * Math.sin(t * 2.6 + s.bobPhase));
         }
         // Pick up anything on the ground (flies once they're swatted down).
         const ground = s.kind !== "fly" || (s.dead && s.lift === 0);

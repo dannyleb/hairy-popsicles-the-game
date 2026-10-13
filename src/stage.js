@@ -12,6 +12,10 @@ const STICK = stickTexture();
 
 const TILE_UNITS = 7; // world units per skin tile
 const TAP_MARK_LIFE = 0.7; // seconds the tap-to-walk ring shows
+// Visual hierarchy: backdrop and decoration sit back so the things you can
+// use (characters, pimples, pickups) read first.
+const BACKDROP_HAZE = "rgba(246, 218, 190, 0.42)";
+const DECOR_ALPHA = 0.45;
 
 // Parallax: how fast each layer scrolls relative to the ground (1).
 const PARALLAX = { moon: 0.06, wall: 0.25, wallPimples: 0.4, hills: 0.6, fore: 1.35 };
@@ -136,6 +140,14 @@ export function createStage(canvas) {
   }
 
   function drawShadow(e) {
+    if (e.w < 1) {
+      // Small pickups: a small, soft shadow right under them.
+      const sw = e.w * 0.95 * (e.scale ?? 1);
+      ctx.globalAlpha = 0.55;
+      ctx.drawImage(SHADOW, X(e.x) - sw / 2 * U, Y(e.g) - sw * 0.1 * U, sw * U, sw * 0.3 * U);
+      ctx.globalAlpha = 1;
+      return;
+    }
     const sw = Math.max(1.2, Math.min(e.w, 3)) * 0.9 * (e.scale ?? 1);
     ctx.globalAlpha = 0.9;
     ctx.drawImage(SHADOW, X(e.x) - sw * 0.2 * U, Y(e.g) - sw * 0.12 * U, sw * U, sw * 0.32 * U);
@@ -266,6 +278,10 @@ export function createStage(canvas) {
       if (sx + s < 0 || sx - s > W) continue;
       ctx.drawImage(p.img, sx - s / 2, Y(p.y) - s / 2, s, s);
     }
+    // Haze over the wall: it's backdrop, so it sits back and the floor reads
+    // as where things happen. (The sun and moon are drawn after, crisp.)
+    ctx.fillStyle = BACKDROP_HAZE;
+    ctx.fillRect(0, 0, W, Math.max(0, hy));
 
     if (env.sky[1] > 0.01) {
       ctx.save();
@@ -331,12 +347,15 @@ export function createStage(canvas) {
     for (const [x, h] of hills.pts) ctx.lineTo(PX(x, PARALLAX.hills), hy - h * U);
     ctx.lineTo(PX(hills.pts[hills.pts.length - 1][0], PARALLAX.hills), hy);
     ctx.closePath();
-    ctx.fillStyle = "#cf9a7e";
+    ctx.fillStyle = "#d8ad94";
     ctx.fill();
-    ctx.lineWidth = 3.5;
+    // Distant, so softer ink than anything you can walk up to.
+    ctx.save();
+    ctx.globalAlpha = 0.45;
+    ctx.lineWidth = 3;
     ctx.strokeStyle = INK;
     ctx.stroke();
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2.5;
     for (const hr of hills.hairs) {
       const bx = PX(hr.x, PARALLAX.hills);
       if (bx < -80 || bx > W + 80) continue;
@@ -347,6 +366,7 @@ export function createStage(canvas) {
       ctx.bezierCurveTo(bx + hr.curl * U, base - hr.len * 0.4 * U, bx + (hr.lean - hr.curl) * U, base - hr.len * 0.8 * U, bx + hr.lean * U, base - hr.len * U);
       ctx.stroke();
     }
+    ctx.restore();
 
     // Ground: moves 1:1 with the world.
     placeTile(floorPat, -cam.x * U + W / 2, -cam.g * U + H / 2, tileScale);
@@ -365,10 +385,12 @@ export function createStage(canvas) {
     });
     ctx.stroke();
 
-    // Stray hairs on the floor (tiny, so they go under everything).
+    // Stray hairs on the floor (tiny, so they go under everything). Faded:
+    // they're texture, and shouldn't look like the hairs you can pick up.
     for (const t of world.tufts) {
       if (!onScreen(t.x, t.size)) continue;
       ctx.save();
+      ctx.globalAlpha = DECOR_ALPHA;
       ctx.translate(X(t.x), Y(t.g));
       if (t.flip) ctx.scale(-1, 1);
       ctx.drawImage(t.img, -t.size / 2 * U, -t.size * U, t.size * U, t.size * U);
@@ -398,7 +420,9 @@ export function createStage(canvas) {
     // Everything else, back to front. Off-screen things are skipped before
     // sorting, and the queue's slots are reused frame to frame.
     queueLen = 0;
-    for (const c of world.gates.edges) if (onScreen(c.x, c.w)) enqueue(c.g, CLUMP, c, 1, 1);
+    // The hair along the horizon and the front edge is backdrop (faded); the
+    // side walls and gates are barriers you bump into, so they stay solid.
+    for (const c of world.gates.edges) if (onScreen(c.x, c.w)) enqueue(c.g, CLUMP, c, 1, c.g < 0 || c.g > AREA.front ? DECOR_ALPHA : 1);
     for (const gate of [world.gates.west, world.gates.east]) {
       const k = gateScale(gate), a = gateAlpha(gate);
       if (a > 0.01) for (const c of gate.clumps) if (onScreen(c.x, c.w)) enqueue(c.g, CLUMP, c, k, a);

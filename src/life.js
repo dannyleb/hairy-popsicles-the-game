@@ -160,6 +160,7 @@ export function createLife({ world, player, hud, story, scraps, isNight = () => 
   }
 
   function mutter(t) {
+    if (hud.busy) return; // a banner or tip is already talking
     let best = null, bd = 4.5;
     for (const p of world.people) {
       if (!p.mutter || t - p.mutterAt < MUTTER_ALONE) continue;
