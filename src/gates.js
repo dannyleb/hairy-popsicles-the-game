@@ -1,17 +1,17 @@
 // Hedges of hair. Permanent ones fence the edges of the page; the gate
 // hedges evaporate when Toad is full (see STAGES in config.js).
-import { AREA } from "./config.js";
+import { AREA, DEPTH } from "./config.js";
 import { hedgeTexture } from "./ink.js";
 
-const kinds = [];
+let kinds = null; // a few hedge drawings, made on first use and shared
 const clumpImg = () => {
-  if (kinds.length < 5) kinds.push(hedgeTexture());
+  kinds ||= Array.from({ length: 5 }, () => hedgeTexture());
   return kinds[Math.floor(Math.random() * kinds.length)];
 };
 
 // A row of hair clumps from (x0, g0) to (x1, g1).
 function row(x0, g0, x1, g1, { height = 1.6, spacing = 0.5 } = {}) {
-  const len = Math.hypot(x1 - x0, (g1 - g0) * 2.5);
+  const len = Math.hypot(x1 - x0, (g1 - g0) * DEPTH);
   const n = Math.ceil(len / spacing);
   return Array.from({ length: n }, (_, i) => {
     const t = (i + Math.random() * 0.8) / n;

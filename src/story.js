@@ -1,4 +1,4 @@
-// Toad is always hungry. Fill his belly (crumbs, hairs, flies from your
+// Toad is hungry. Fill his belly (crumbs, hairs, flies from your
 // pockets, or a big meal carried over) and he's full: he burps, the next hair
 // wall evaporates, and he waddles home to sleep it off. While he digests he
 // won't eat (your pockets stay full). Then his appetite comes back bigger.
@@ -21,8 +21,9 @@ const PIMPLE_SLAPS = 3;
 const EYE_SLAPS = 2;
 const ROAST_WATER = 4;
 const BIG = ["blob", "roast", "eyeball"];
-const DIGEST = 25;          // seconds asleep after each stage
-const DIGEST_SECONDS = 50;  // seconds asleep between helpings of seconds
+const NAP_AFTER_STAGE = 25;     // seconds asleep after each stage
+const NAP_BETWEEN_SECONDS = 50; // seconds asleep between helpings of seconds
+const END_CARD_DELAY = 1.6;     // seconds from the last burp to "Toad is full." 
 const SECONDS_PUS = 25;     // pus for filling him up again after the story
 
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -36,7 +37,7 @@ export function cravingFor(dateStr) {
 const CRAVE_NAME = { crumb: "crumbs", pube: "hairs", fly: "flies" };
 
 export function createStory({ world, hud, img, eyeballImg, onOpen, onEvent = () => {}, progress, craving }) {
-  const s = { stage: 0, belly: 0, done: false, digest: 0, digestFor: 1, pimpleSlaps: 0, eyeSlaps: 0, roastWater: 0, talk: {}, hungryCooldown: 2, snoreIn: 0 };
+  const s = { stage: 0, belly: 0, done: false, digest: 0, digestFor: 1, endIn: 0, pimpleSlaps: 0, eyeSlaps: 0, roastWater: 0, talk: {}, hungryCooldown: 2, snoreIn: 0 };
   const { byId } = world;
   const toad = byId.toad;
 
@@ -94,13 +95,13 @@ export function createStory({ world, hud, img, eyeballImg, onOpen, onEvent = () 
       if (!s.done) {
         s.done = true;
         onEvent("fedUp");
-        setTimeout(() => hud.showEnd(), 1600);
+        s.endIn = END_CARD_DELAY;
       } else {
         progress.addPus(SECONDS_PUS);
         hud.setPus(progress.pus, true);
         hud.banner("SECONDS", "Toad is full again", `+${SECONDS_PUS} pus`);
       }
-      sleep(DIGEST_SECONDS);
+      sleep(NAP_BETWEEN_SECONDS);
       return;
     }
     const gate = world.gates[stage.opens];
@@ -109,7 +110,7 @@ export function createStory({ world, hud, img, eyeballImg, onOpen, onEvent = () 
     sfx.rustle();
     s.stage++;
     zoneNote = `The hair wall to ${stage.zone} evaporated. Go explore.`;
-    sleep(DIGEST);
+    sleep(NAP_AFTER_STAGE);
     if (onOpen) onOpen(gate, stage);
   }
 
@@ -143,7 +144,6 @@ export function createStory({ world, hud, img, eyeballImg, onOpen, onEvent = () 
 
     talk(p) {
       if (p === toad) return s.digest > 0 ? pick(["...full. let me sleep.", "zzz... no more...", "*snore*"]) : pick(["HUNGRY.", "feed me.", "FOOOOD.", "*stomach noise*", "more."]);
-      if (p.kind === "roast") return p.juicy ? "I'm ready." : "so... dry...";
       if (p.id === "pimples" && s.pimpleSlaps >= PIMPLE_SLAPS) return "I feel lighter. Thanks.";
       if (p.id === "bigeye" && s.eyeSlaps >= EYE_SLAPS) return "I can see half as much and I'm happier.";
       return lines(p) ?? pick(GRUNTS);
@@ -201,6 +201,7 @@ export function createStory({ world, hud, img, eyeballImg, onOpen, onEvent = () 
     },
 
     update(dt, player) {
+      if (s.endIn > 0 && (s.endIn -= dt) <= 0) hud.showEnd();
       // Toad swells as he eats; after a full meal he deflates back down.
       const fat = toad.fat || 0;
       toad.scale += (1 + Math.min(fat, 1.25) * 0.2 - toad.scale) * Math.min(1, dt * 3);
@@ -217,7 +218,7 @@ export function createStory({ world, hud, img, eyeballImg, onOpen, onEvent = () 
       }
       if (s.digest > 0) {
         s.digest = Math.max(0, s.digest - dt);
-        hud.setBelly(s.digest / s.digestFor, "zzz");
+        hud.setBelly(s.digest / s.digestFor, "zzz"); // the HUD skips no-op updates
         s.snoreIn -= dt;
         if (s.snoreIn <= 0 && floorDist(player, toad) < 12) { hud.say(toad, pick(["zzz...", "*snore*", "zzzz...", "*gurgle* zzz"])); s.snoreIn = 7; }
         if (s.digest <= 0) {

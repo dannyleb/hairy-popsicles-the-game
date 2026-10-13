@@ -22,6 +22,7 @@ export function updatePlayer(player, input, dt, people, gates) {
   }
 
   for (const p of people) {
+    if (p.visible === false) continue;
     const dx = player.x - p.x, dg = (player.g - p.g) * DEPTH;
     const min = p.radius + PLAYER.radius, d = Math.hypot(dx, dg);
     if (d < min && d > 1e-4) {
@@ -32,12 +33,12 @@ export function updatePlayer(player, input, dt, people, gates) {
 
   const [minX, maxX] = walkableX(gates, PLAYER.radius);
   player.x = Math.max(minX, Math.min(maxX, player.x));
-  player.g = Math.max(0.4, Math.min(AREA.front, player.g));
+  player.g = Math.max(AREA.back, Math.min(AREA.front, player.g));
 
   let tilt = input.moving ? Math.sin(player.walk) * 0.12 : 0;
   if (player.lunge > 0) {
     player.lunge = Math.max(0, player.lunge - dt);
-    tilt += Math.sin((player.lunge / 0.25) * Math.PI) * -0.45;
+    tilt += Math.sin((player.lunge / PLAYER.lunge) * Math.PI) * -0.45;
   }
   player.rot = tilt;
   player.lift = input.moving ? Math.abs(Math.sin(player.walk)) * 0.18 : 0;

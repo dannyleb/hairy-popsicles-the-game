@@ -62,7 +62,7 @@ framework, no server code, deployed to GitHub Pages like
 | Art pipeline | `tools/cutout.mjs` + `tools/trace.mjs` + `tools/animate.mjs` with [sharp](https://sharp.pixelplumbing.com/) and [potrace](https://www.npmjs.com/package/potrace) (dev only) |
 | Linting | ESLint 9 (flat config, `eslint.config.js`) |
 | Hosting | GitHub Pages, deployed by GitHub Actions on push to `main` |
-| Runtime | Node 20+ (build only) |
+| Runtime | Node 22+ (build only) |
 
 ## Running locally
 
@@ -71,7 +71,9 @@ npm install
 npm run dev       # dev server at http://localhost:8080, rebuilds on reload
 npm run build     # production build into dist/
 npm run lint      # ESLint over src/, tools/ and the build script
-npm run sprites   # re-cut sprites from assets/concept/ and rebuild idle animation strips
+npm run check     # lint + build (what CI runs)
+npm run sprites   # re-cut sprites from assets/concept/ and rebuild their idle animation strips
+npm run sprites -- weeper   # just one character (or several names)
 npm run album     # web-sized scans for the Self-Portrait Album (assets/album/)
 ```
 
@@ -135,8 +137,8 @@ stage entry plus a gate in `src/gates.js`.
 **Pus points.** Pop a floor pimple by tapping/clicking it (you walk over),
 or by walking up to it and pressing E or Space (bubble-pop sound). Pus
 globs spray out; walk over them to slurp them up. Each glob is one pus
-point, shown top-left and saved in the browser (`localStorage`), to be
-spent on something later. Popped pimples swell back up after 40-75 s.
+point, shown top-left and saved in the browser (`localStorage`), spent in
+Mirror's shop. Popped pimples swell back up after 40-75 s.
 Walking on the skin squelches.
 
 **Combos.** Pop pimples within 1.8 s of each other: x2 at 3, x3 at 5,
@@ -149,7 +151,9 @@ collection. Red Eye only comes out at night.
 **Tips** (`src/tips.js`): a gentle tutorial. One short tip at a time,
 shown the first time it's useful and never again (saved): pocket things,
 feed Toad, pop pimples, pockets full, first card, first achievement, enough
-pus to buy something, Toad asleep, nightfall. Tips about the menu make the
+pus to buy something, "everyone wants something" (after your first talk),
+Toad asleep, nightfall, and "it's all in this menu" if you haven't opened
+it after a couple of minutes. Tips about the menu make the
 menu button pulse and highlight the row they mean inside it (Shop, Album,
 Achievements). Talking to
 someone whose card you haven't earned tells you what they want.
@@ -178,8 +182,8 @@ can, glob magnet, fly bait, faster feet, and cosmetics drawn on you
 **Achievements** (18, gross names) in `ACHIEVEMENTS` in `src/progress.js`.
 
 **Daily.** Toad craves one food each day (counts double). Coming back
-gives a gift of pus that grows with total days visited; missing days
-never loses anything.
+gives a gift of pus: 12 on your second day, 2 more each day after, up to
+30 from day 11 on. Missing days never loses anything.
 
 **Share card.** The pause menu builds a 1080x1350 image of you (with
 cosmetics), your stats and your latest card, shared with the phone's
@@ -207,7 +211,7 @@ src/world.js         entities (cast, items, drips, pimples), squash-and-stretch,
 src/gates.js         hair hedges: page edges and the zone gates (evaporate when opened)
 src/ink.js           everything drawn at runtime: skin tiles, pimples, stick, shadow, hair, drip, eyeball
 src/player.js        movement, zone bounds, collisions, waddle and slap lunge
-src/controls.js      keyboard, D-pad and verb buttons
+src/controls.js      keyboard and on-screen verb buttons
 src/pus.js           pus globs, golden pimples, mystery curios, stains, pimple regrowth
 src/progress.js      everything saved: pus, stats, cards, curios, shop, achievements, daily gift
 src/album.js         Self-Portrait Album cards and what each character wants
@@ -215,17 +219,18 @@ src/album-notes.js   the artist's note for each card
 src/shop.js          Mirror's shop items, prices and their effects
 src/splash.js        stepping in puddles: splash sound, ring, droplets
 src/tips.js          one-time tutorial tips and what-they-want hints
-src/scraps.js        Toad food: crumbs, hairs, flies (buzz, swat), pockets, respawn
+src/scraps.js        Toad food: crumbs, hairs, flies, toenails, droppings; pocket slots, respawn
 src/music.js         background music: alternates two tracks with fades, "tap to enter" if autoplay is blocked, mute
 src/sfx.js           procedural sound: slap, splash, gulp, burp, bubble pop, squish, bloop
 src/ui/hud.js        objective, can meter, verb prompt, speech bubbles, bursts, banners, floating numbers, end card
 src/ui/menus.js      pause menu, album, achievements, curios, shop, share card
+src/ui/confirm.js    in-game yes/no dialog; "new player? start over"
 public/              index.html, style.css, audio/theme.mp3 + audio/music-box.mp3 (background music)
 assets/              scans and processed sprites (see assets/README.md)
-tools/cutout.mjs     paper keying, splitting, sprite export
+tools/cutout.mjs     paper keying, splitting, sprite export (then runs animate.mjs)
 tools/trace.mjs      rebuild as vector art: traced lines, fixed flesh palette, cel shade, outline
-tools/animate.mjs    idle strips: swaying hair, stretching drips
+tools/animate.mjs    idle strips: swaying hair, stretching drips (seeded, so re-runs don't churn)
 tools/album.mjs      web-sized scans for the album
 build.mjs            esbuild build and dev server; cache-busting hashes
-.github/workflows/pages.yml   lint, build, deploy to GitHub Pages
+.github/workflows/pages.yml   lint + build on every push/PR; deploy main to GitHub Pages
 ```

@@ -1,7 +1,8 @@
 // Everything on the stage is an entity: a drawing with feet at (x, g),
 // optionally on a popsicle stick, lifted `lift` off the floor, with
 // squash-and-stretch, sway and a flat contact shadow.
-import { AREA, DEPTH } from "./config.js";
+import { AREA, DEPTH, SPAWN } from "./config.js";
+import { START_PHASE } from "./daynight.js";
 import { DRIP_SPOTS, ROSTER } from "./roster.js";
 import { dripTexture, pimpleTexture, poppedTexture, rng, tuftTexture } from "./ink.js";
 import { buildHedges } from "./gates.js";
@@ -52,13 +53,13 @@ function pimples(people) {
   const side = Array.from({ length: 8 }, (_, i) => pimpleTexture(100 + i));
   const face = Array.from({ length: 6 }, (_, i) => pimpleTexture(200 + i, { faceOn: true }));
   const popped = Array.from({ length: 4 }, (_, i) => poppedTexture(300 + i));
-  const blocked = [...people.map((p) => [p.x, p.g, p.radius + 3.4]), ...DRIP_SPOTS.map(([x, g]) => [x, g, 1.2]), [0, 6.7, 2]];
+  const blocked = [...people.map((p) => [p.x, p.g, p.radius + 3.4]), ...DRIP_SPOTS.map(([x, g]) => [x, g, 1.2]), [SPAWN.x, SPAWN.g, 2]];
   const floor = [];
   for (let tries = 0; floor.length < 46 && tries < 2000; tries++) {
     const x = AREA.minX + rand() * (AREA.maxX - AREA.minX);
     const g = 0.5 + rand() * (AREA.front - 0.7);
-    if (blocked.some(([bx, bg, r]) => Math.hypot(x - bx, (g - bg) * 2.5) < r)) continue;
-    if (floor.some((p) => Math.hypot(x - p.x, (g - p.g) * 2.5) < 1.2 + p.h)) continue;
+    if (blocked.some(([bx, bg, r]) => Math.hypot(x - bx, (g - bg) * DEPTH) < r)) continue;
+    if (floor.some((p) => Math.hypot(x - p.x, (g - p.g) * DEPTH) < 1.2 + p.h)) continue;
     const h = 0.3 + rand() ** 2.2 * 1.9;
     const e = makeEntity(side[Math.floor(rand() * side.length)], h, x, g, { kind: "pimple", shadow: false, radius: 0.4 });
     e.popped = popped[Math.floor(rand() * popped.length)];
@@ -99,6 +100,14 @@ export function buildWorld(img) {
     tufts: tufts(),
     gates: buildHedges(),
     moon: img.moon,
+    // Filled in by the systems that own them (scraps.js, pus.js, splash.js,
+    // interact.js, main.js); declared here so the shape is in one place.
+    scraps: [],
+    globs: [],
+    stains: [],
+    splashes: [],
+    tapMark: null,
+    clock: START_PHASE,
   };
 }
 

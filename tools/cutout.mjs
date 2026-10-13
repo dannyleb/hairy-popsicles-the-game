@@ -3,6 +3,9 @@
 //   npm run sprites                 every assets/concept/*.jpg
 //   npm run sprites -- weeper toad  just those
 //
+// Then runs tools/animate.mjs on the same names, so the idle-animation
+// strips always match the sprites they were made from.
+//
 // For each scan: key out the paper with a contiguous flood fill from the
 // edges (so pale skin inside an ink outline survives), split what's left
 // into separate drawings, flatten each into 2D illustration style (solid
@@ -11,6 +14,7 @@
 // (largest first).
 import sharp from "sharp";
 import { distance, outlineFor, traceDrawing } from "./trace.mjs";
+import { execFileSync } from "node:child_process";
 import { mkdirSync, readdirSync, rmSync } from "node:fs";
 import { basename, extname, join } from "node:path";
 
@@ -270,10 +274,15 @@ for (const f of files) {
       ? keepInk(keyPaper(await load(join(SRC, f), 9), paper, HALO_FAR), img)
       : keyPaper(img, paper);
   const { fg, label, pieces } = splitDrawings(bg, img.w, img.h);
-  for (const old of readdirSync(OUT)) if (old === `${name}.webp` || old.startsWith(`${name}-`)) rmSync(join(OUT, old));
+  // This scan's old outputs only: name.webp, name-2.webp, ..., and their
+  // -anim strips (not another scan that happens to start with "name-").
+  const mine = new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(-\\d+)?(-anim)?\\.webp$`);
+  for (const old of readdirSync(OUT)) if (mine.test(old)) rmSync(join(OUT, old));
   for (let i = 0; i < pieces.length; i++) {
     const piece = GROUND_LINES.has(name) ? trimGroundLine(img, fg, label, pieces[i]) : pieces[i];
     await exportPiece(img, fg, label, piece, join(OUT, i ? `${name}-${i + 1}.webp` : `${name}.webp`));
   }
   console.log(`  ${name}: paper rgb(${paper.join(",")}), ${pieces.length} piece(s)`);
 }
+
+execFileSync(process.execPath, ["tools/animate.mjs", ...only], { stdio: "inherit" });

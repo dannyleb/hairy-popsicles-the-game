@@ -2,8 +2,9 @@
 // askConfirm({ title, text, yes, no }) resolves true or false.
 const $ = (id) => document.getElementById(id);
 
-export function askConfirm({ title, text, yes = "Yes", no = "No" }) {
+function askConfirm({ title, text, yes = "Yes", no = "No" }) {
   const box = $("confirm");
+  const returnFocus = document.activeElement;
   $("confirmTitle").textContent = title;
   $("confirmText").textContent = text;
   $("confirmYes").textContent = yes;
@@ -11,12 +12,19 @@ export function askConfirm({ title, text, yes = "Yes", no = "No" }) {
   box.hidden = false;
   $("confirmNo").focus();
   return new Promise((resolve) => {
-    const onKey = (e) => { if (e.key === "Escape") { e.stopImmediatePropagation(); done(false); } };
+    // Escape cancels just this dialog (not the menu underneath it).
+    const onKey = (e) => {
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      done(false);
+    };
     window.addEventListener("keydown", onKey, true);
     const done = (answer) => {
       window.removeEventListener("keydown", onKey, true);
       box.hidden = true;
       $("confirmYes").onclick = $("confirmNo").onclick = box.onclick = null;
+      if (returnFocus && returnFocus.isConnected) returnFocus.focus();
       resolve(answer);
     };
     $("confirmYes").onclick = () => done(true);

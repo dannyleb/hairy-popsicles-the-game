@@ -25,8 +25,10 @@ const options = {
 
 rmSync(OUT, { recursive: true, force: true });
 cpSync("public", OUT, { recursive: true });
-// Original scans stay out of the site; only the processed sprites ship.
-cpSync("assets", `${OUT}/assets`, { recursive: true, filter: (src) => !src.includes("concept") });
+// Original scans (assets/concept) and the assets README stay out of the
+// site; only the processed sprites, album images and so on ship.
+const UNSHIPPED = /^assets[\\/](concept([\\/]|$)|README\.md$)/;
+cpSync("assets", `${OUT}/assets`, { recursive: true, filter: (src) => !UNSHIPPED.test(src) });
 
 if (serve) {
   const ctx = await esbuild.context(options);

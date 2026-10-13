@@ -7,7 +7,7 @@ import { basename, extname, join } from "node:path";
 
 const SRC = "assets/concept", OUT = "assets/album";
 mkdirSync(OUT, { recursive: true });
-for (const f of readdirSync(SRC).filter((f) => /\.(jpe?g|png)$/i.test(f))) {
+for (const f of readdirSync(SRC).filter((name) => /\.(jpe?g|png)$/i.test(name))) {
   await sharp(join(SRC, f)).rotate().resize(900, 900, { fit: "inside" }).jpeg({ quality: 76, mozjpeg: true })
     .toFile(join(OUT, `${basename(f, extname(f))}.jpg`));
 }

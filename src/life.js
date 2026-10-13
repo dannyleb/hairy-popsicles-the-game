@@ -10,7 +10,7 @@
 //   - people mutter to themselves as you walk past
 //   - Toad gets excited when you're carrying food
 // The player gets breathing, a lean into movement and a squash on each step.
-import { AREA, DEPTH } from "./config.js";
+import { AREA, DEPTH, MAX_STAINS } from "./config.js";
 import { floorDist, makeEntity, squash } from "./world.js";
 import { puddleTexture } from "./ink.js";
 
@@ -148,7 +148,7 @@ export function createLife({ world, player, hud, story, scraps, isNight = () => 
           squash(d, 1);
           if (world.stains) {
             world.stains.push({ img: pick(puddles), x: d.x, g: d.g + 0.02, size: 0.9 + Math.random() * 0.4, t: 0, life: DROP_LIFE + 5, kind: "water" });
-            if (world.stains.length > 40) world.stains.shift();
+            if (world.stains.length > MAX_STAINS) world.stains.shift();
           }
         }
         continue;

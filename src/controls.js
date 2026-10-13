@@ -1,15 +1,22 @@
-// Keyboard + on-screen D-pad and verb buttons, merged into one per-frame
-// poll(): analog movement plus one-shot verb presses.
+// Keyboard and on-screen verb buttons, merged into one per-frame poll():
+// a normalized 8-way movement vector plus one-shot verb presses.
 const keys = new Set();
-const pad = { up: false, down: false, left: false, right: false };
 const pressed = new Set();
 
 const VERB_KEYS = { " ": "slap", e: "grab", q: "water" };
+const DIALOGS = "#startOverlay, #menu, #pageView, #confirm, #endCard";
+
+// Inside an open menu or dialog, Space/E/Q belong to the focused button.
+// (Focus can stay on a button after its dialog closes; that doesn't count.)
+function inOpenDialog(target) {
+  const d = target instanceof Element && target.closest(DIALOGS);
+  return !!d && !d.hidden && !d.classList.contains("hidden");
+}
 
 window.addEventListener("keydown", (e) => {
   const k = e.key.toLowerCase();
   keys.add(k);
-  if (VERB_KEYS[k]) {
+  if (VERB_KEYS[k] && !inOpenDialog(e.target)) {
     e.preventDefault();
     if (!e.repeat) pressed.add(VERB_KEYS[k]);
   }
@@ -17,17 +24,7 @@ window.addEventListener("keydown", (e) => {
 window.addEventListener("keyup", (e) => keys.delete(e.key.toLowerCase()));
 window.addEventListener("blur", () => keys.clear());
 
-function bindPadButton(el, dir) {
-  if (!el) return;
-  const set = (v) => (pad[dir] = v);
-  el.addEventListener("pointerdown", (e) => { e.preventDefault(); set(true); });
-  el.addEventListener("pointerup", () => set(false));
-  el.addEventListener("pointerleave", () => set(false));
-  el.addEventListener("pointercancel", () => set(false));
-}
-
 export function initControls() {
-  for (const dir of ["up", "down", "left", "right"]) bindPadButton(document.querySelector(`#dpad .${dir}`), dir);
   // No long-press menus on touch.
   window.addEventListener("contextmenu", (e) => e.preventDefault());
   for (const el of document.querySelectorAll("[data-verb]")) {
@@ -35,11 +32,17 @@ export function initControls() {
   }
 }
 
+// Forget presses made while the game wasn't running (title, menus), so they
+// don't all fire on the first frame back.
+export function clearPresses() {
+  pressed.clear();
+}
+
 export function poll() {
-  const up = keys.has("w") || keys.has("arrowup") || pad.up;
-  const down = keys.has("s") || keys.has("arrowdown") || pad.down;
-  const left = keys.has("a") || keys.has("arrowleft") || pad.left;
-  const right = keys.has("d") || keys.has("arrowright") || pad.right;
+  const up = keys.has("w") || keys.has("arrowup");
+  const down = keys.has("s") || keys.has("arrowdown");
+  const left = keys.has("a") || keys.has("arrowleft");
+  const right = keys.has("d") || keys.has("arrowright");
   const run = keys.has("shift");
 
   let x = 0, z = 0;

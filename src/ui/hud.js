@@ -29,6 +29,8 @@ export function createHud(stage) {
     }, 2600);
   }
 
+  const lastBelly = { width: "", label: "" };
+
   return {
     setObjective(title, sub) {
       objTitle.textContent = title;
@@ -46,13 +48,18 @@ export function createHud(stage) {
       canEl.innerHTML = Array.from({ length: max }, (_, i) => `<i class="${i < n ? "full" : ""}"></i>`).join("");
     },
 
-    // Toad's belly: k in 0..1, label like "7/15".
+    // Toad's belly: k in 0..1, label like "7/15". Called every frame while
+    // he digests, so it only touches the DOM when something changed.
     setBelly(k, label) {
-      $("bellyFill").style.width = `${Math.round(Math.max(0, Math.min(1, k)) * 100)}%`;
+      const width = `${Math.round(Math.max(0, Math.min(1, k)) * 100)}%`;
+      if (width === lastBelly.width && label === lastBelly.label) return;
+      Object.assign(lastBelly, { width, label });
+      $("bellyFill").style.width = width;
       $("bellyTxt").textContent = label;
     },
 
-    setPockets(n, max = 12) {
+    // Pocket slots used of max.
+    setPockets(n, max) {
       const el = $("pockets");
       const k = Math.min(1, n / max);
       $("pocketFill").style.width = `${Math.round(k * 100)}%`;
@@ -141,7 +148,11 @@ export function createHud(stage) {
     },
 
     showEnd() {
-      $("endCard").classList.add("show");
+      const el = $("endCard");
+      el.hidden = false;
+      void el.offsetWidth; // let it render hidden-to-visible so it fades in
+      el.classList.add("show");
+      $("endKeep").focus();
     },
 
     update(dt) {

@@ -8,18 +8,19 @@
     "build": "node build.mjs",
     "dev": "node build.mjs --serve",
     "lint": "eslint .",
-    "sprites": "node tools/cutout.mjs && node tools/animate.mjs",
-    "album": "node tools/album.mjs"
+    "sprites": "node tools/cutout.mjs",
+    "album": "node tools/album.mjs",
+    "check": "npm run lint && npm run build"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
-    "esbuild": "^0.24.0",
+    "esbuild": "^0.28.2",
     "eslint": "^9.39.5",
     "globals": "^17.13.0",
-    "potrace": "^2.1.8",
-    "sharp": "^0.34.4"
+    "potrace": "2.1.8",
+    "sharp": "^0.35.5"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   }
 }

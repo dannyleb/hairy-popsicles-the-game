@@ -6,7 +6,15 @@
 export const CYCLE_SECONDS = 240;
 export const START_PHASE = 0.1;
 
-const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+// Night, for gameplay (Red Eye, night-only wants): from late dusk to dawn.
+export const isNightPhase = (phase) => phase > 0.53 && phase < 0.95;
+
+// Parsed once per color (environment() runs every frame).
+const parsed = new Map();
+const hex = (h) => {
+  if (!parsed.has(h)) parsed.set(h, [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)));
+  return parsed.get(h);
+};
 
 const DAWN = { sky: ["#f3a98a", 0.35], world: ["#ffb48f", 0.2], stars: 0.15 };
 const DAY = { sky: ["#ffffff", 0], world: ["#ffffff", 0], stars: 0 };

@@ -3,7 +3,7 @@
 // shop). Pops in quick succession build a combo that multiplies every glob.
 // About 1 pimple in 40 is a golden whitehead that gushes; now and then a
 // glob has a curio in it. Pops leave stains; popped pimples swell back.
-import { AREA } from "./config.js";
+import { AREA, MAX_STAINS } from "./config.js";
 import { CURIOS, goldenPimpleTexture, mysteryGlobTexture, pusGlobTexture, stainTexture } from "./ink.js";
 import { floorDist, makeEntity, squash } from "./world.js";
 import { sfx } from "./sfx.js";
@@ -55,7 +55,7 @@ export function createPus({ world, player, hud, progress, upgrades, stage }) {
     }
     if (Math.random() < MYSTERY_ODDS) spawn(pimple, mysteryImg, 1, { curio: true });
     world.stains.push({ img: stainImgs[Math.floor(Math.random() * 4)], x: pimple.x, g: pimple.g + 0.05, size: 0.9 + pimple.h * 0.8, t: 0, life: STAIN_LIFE, kind: "pus" });
-    if (world.stains.length > 30) world.stains.shift();
+    if (world.stains.length > MAX_STAINS) world.stains.shift();
     pimple.regrow = REGROW[0] + Math.random() * (REGROW[1] - REGROW[0]);
   }
 
@@ -130,6 +130,6 @@ export function createPus({ world, player, hud, progress, upgrades, stage }) {
   return { burst, update };
 }
 
-export function unpop(p) {
+function unpop(p) {
   Object.assign(p, p.orig, { kind: "pimple" });
 }

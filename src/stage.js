@@ -11,6 +11,7 @@ const SHADOW = shadowTexture();
 const STICK = stickTexture();
 
 const TILE_UNITS = 7; // world units per skin tile
+const TAP_MARK_LIFE = 0.7; // seconds the tap-to-walk ring shows
 
 // Parallax: how fast each layer scrolls relative to the ground (1).
 const PARALLAX = { moon: 0.06, wall: 0.25, wallPimples: 0.4, hills: 0.6, fore: 1.35 };
@@ -112,9 +113,21 @@ export function createStage(canvas) {
     let tg = target.g - 2;
     const lo = top + viewH / 2, hi = bottom - viewH / 2;
     tg = lo > hi ? (lo + hi) / 2 : Math.max(lo, Math.min(hi, tg));
-    const k = dt < 0 ? 1 : 1 - Math.exp(-5 * dt);
+    const k = dt === Infinity ? 1 : 1 - Math.exp(-5 * dt);
     cam.x += (tx - cam.x) * k;
     cam.g += (tg - cam.g) * k;
+  }
+  // Jump straight to the target (no easing), e.g. on the first frame.
+  const snap = (target) => follow(target, Infinity);
+
+  // One matrix reused for the tiled skin patterns (no allocation per frame).
+  const tileM = new DOMMatrix();
+  function placeTile(pat, x, y, scale) {
+    tileM.a = tileM.d = scale;
+    tileM.b = tileM.c = 0;
+    tileM.e = x;
+    tileM.f = y;
+    pat.setTransform(tileM);
   }
 
   function onScreen(x, w) {
@@ -238,12 +251,12 @@ export function createStage(canvas) {
     // Screen x for a layer scrolling at `k` times the ground's speed.
     const PX = (x, k) => (x - cam.x * k) * U + W / 2;
     const tileScale = TILE_UNITS * U / floorTile.width;
-    const env = environment(world.clock ?? 0.1);
+    const env = environment(world.clock);
 
     // ----- Sky pass, straight onto the screen -----
     ctx = screen;
     const hy = Y(0);
-    wallPat.setTransform(new DOMMatrix().translate(-cam.x * PARALLAX.wall * U + W / 2, -cam.g * PARALLAX.wall * U + H / 2).scale(tileScale));
+    placeTile(wallPat, -cam.x * PARALLAX.wall * U + W / 2, -cam.g * PARALLAX.wall * U + H / 2, tileScale);
     ctx.fillStyle = wallPat;
     ctx.fillRect(0, 0, W, Math.max(0, hy));
     // Pimples swelling out of the wall.
@@ -335,7 +348,7 @@ export function createStage(canvas) {
     }
 
     // Ground: moves 1:1 with the world.
-    floorPat.setTransform(new DOMMatrix().translate(-cam.x * U + W / 2, -cam.g * U + H / 2).scale(tileScale));
+    placeTile(floorPat, -cam.x * U + W / 2, -cam.g * U + H / 2, tileScale);
     ctx.fillStyle = floorPat;
     ctx.fillRect(0, Math.max(0, hy), W, H);
 
@@ -370,11 +383,10 @@ export function createStage(canvas) {
     }
     ctx.globalAlpha = 1;
 
-    // Where you last tapped to walk.
+    // Where you last tapped to walk (its age is advanced by the game loop).
     const tm = world.tapMark;
-    if (tm && tm.t < 0.7) {
-      tm.t += 1 / 60;
-      const k = tm.t / 0.7;
+    if (tm && tm.t < TAP_MARK_LIFE) {
+      const k = tm.t / TAP_MARK_LIFE;
       ctx.strokeStyle = `rgba(46, 22, 22, ${0.8 * (1 - k)})`;
       ctx.lineWidth = 3;
       ctx.beginPath();
@@ -382,25 +394,30 @@ export function createStage(canvas) {
       ctx.stroke();
     }
 
-    // Everything else, back to front.
-    const list = [];
-    for (const c of world.gates.edges) list.push([c.g, () => drawClump(c, 1)]);
+    // Everything else, back to front. Off-screen things are skipped before
+    // sorting, and the queue's slots are reused frame to frame.
+    queueLen = 0;
+    for (const c of world.gates.edges) if (onScreen(c.x, c.w)) enqueue(c.g, CLUMP, c, 1, 1);
     for (const gate of [world.gates.west, world.gates.east]) {
       const k = gateScale(gate), a = gateAlpha(gate);
-      if (a > 0.01) for (const c of gate.clumps) list.push([c.g, () => drawClump(c, k, a)]);
-      if (gate.open && gate.wither < 1) list.push([AREA.front, () => drawSteam(gate)]);
+      if (a > 0.01) for (const c of gate.clumps) if (onScreen(c.x, c.w)) enqueue(c.g, CLUMP, c, k, a);
+      if (gate.open && gate.wither < 1) enqueue(AREA.front, STEAM, gate);
     }
-    for (const e of world.scraps) list.push([e.g, () => drawEntity(e)]);
-    for (const e of world.people) list.push([e.g, () => drawEntity(e)]);
-    for (const e of world.items) if (e !== carried) list.push([e.g, () => drawEntity(e)]);
-    for (const e of world.drips) list.push([e.g, () => drawEntity(e)]);
-    for (const e of world.pimples) list.push([e.g, () => drawEntity(e)]);
-    list.push([player.g, () => drawEntity(player)]);
-    if (carried) list.push([player.g + 0.001, () => drawEntity(carried)]);
-    for (const e of world.fx) list.push([e.g + 0.002, () => drawEntity(e)]);
-    for (const e of world.globs) list.push([e.g + 0.001, () => drawEntity(e)]);
-    list.sort((a, b) => a[0] - b[0]);
-    for (const [, fn] of list) fn();
+    queueAll(world.scraps, 0);
+    queueAll(world.people, 0);
+    for (const e of world.items) if (e !== carried) queueEntity(e, 0);
+    queueAll(world.drips, 0);
+    queueAll(world.pimples, 0);
+    queueEntity(player, 0);
+    if (carried) enqueue(player.g + 0.001, ENTITY, carried);
+    queueAll(world.fx, 0.002);
+    queueAll(world.globs, 0.001);
+    const order = queue.slice(0, queueLen).sort(byDepth);
+    for (const q of order) {
+      if (q.type === CLUMP) drawClump(q.ref, q.k, q.a);
+      else if (q.type === STEAM) drawSteam(q.ref);
+      else drawEntity(q.ref);
+    }
 
     drawSplashes(ctx, world, X, Y, U);
 
@@ -441,6 +458,23 @@ export function createStage(canvas) {
     }
   }
 
+  // Depth-sorted draw queue (see draw()).
+  const CLUMP = 0, STEAM = 1, ENTITY = 2;
+  const queue = [];
+  let queueLen = 0;
+  const byDepth = (a, b) => a.g - b.g;
+  function enqueue(g, type, ref, k = 1, a = 1) {
+    const q = queue[queueLen] || (queue[queueLen] = {});
+    q.g = g; q.type = type; q.ref = ref; q.k = k; q.a = a;
+    queueLen++;
+  }
+  function queueEntity(e, dg) {
+    if (e.visible && onScreen(e.x, e.w)) enqueue(e.g + dg, ENTITY, e);
+  }
+  function queueAll(list, dg) {
+    for (const e of list) queueEntity(e, dg);
+  }
+
   // Screen shake: the whole canvas jolts and settles.
   let shakeT = 0, shakePow = 0;
   function shake(power) {
@@ -456,7 +490,7 @@ export function createStage(canvas) {
   }
 
   return {
-    resize, follow, draw, shake, applyShake,
+    resize, follow, snap, draw, shake, applyShake,
     toScreen: (x, g, lift) => ({ x: X(x), y: Y(g) - lift * U }),
     toWorld: (sx, sy) => ({ x: (sx - W / 2) / U + cam.x, g: (sy - H / 2) / U + cam.g }),
     // Frontmost entity whose drawing covers screen point (sx, sy), with a

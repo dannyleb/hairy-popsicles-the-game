@@ -1,7 +1,11 @@
 // Everything that carries over between visits, saved in the browser:
 // pus points, lifetime stats, achievements, album pages, curios, shop
 // purchases and visit days. Nothing here punishes you for missing a day.
+import { PAGES } from "./album.js";
+import { CURIOS } from "./ink.js";
+
 const KEY = "hairy-popsicles-progress-v1";
+const HALF_ALBUM = Math.floor(PAGES.length / 2);
 const OLD_PUS_KEY = "hairy-popsicles-pus";
 
 export const ACHIEVEMENTS = [
@@ -17,9 +21,9 @@ export const ACHIEVEMENTS = [
   { id: "fedUp", name: "Fed Up", text: "Fill Toad all the way up.", stat: "fullFeeds", goal: 1 },
   { id: "mirrorNight", name: "Face Your Reflection", text: "Talk to Mirror at night.", stat: "mirrorNight", goal: 1 },
   { id: "nightOwl", name: "Night Owl", text: "Meet Red Eye. He only comes out at night.", stat: "metRedeye", goal: 1 },
-  { id: "album11", name: "Halfway Into Your Own Skin", text: "Collect 11 cards.", stat: "pages", goal: 11 },
-  { id: "albumAll", name: "Comfortable in Your Own Skin", text: "Collect every card.", stat: "pages", goal: 22 },
-  { id: "curiosAll", name: "Collector of Leftovers", text: "Find every curio.", stat: "curios", goal: 8 },
+  { id: "album11", name: "Halfway Into Your Own Skin", text: `Collect ${HALF_ALBUM} cards.`, stat: "pages", goal: HALF_ALBUM },
+  { id: "albumAll", name: "Comfortable in Your Own Skin", text: "Collect every card.", stat: "pages", goal: PAGES.length },
+  { id: "curiosAll", name: "Collector of Leftovers", text: "Find every curio.", stat: "curios", goal: CURIOS.length },
   { id: "pus1000", name: "Pus Baron", text: "Collect 1,000 pus points in total.", stat: "pusTotal", goal: 1000 },
   { id: "shop", name: "Treat Yourself", text: "Buy something from Mirror.", stat: "bought", goal: 1 },
   { id: "regular", name: "Regular", text: "Play on 5 different days.", stat: "days", goal: 5 },
@@ -34,11 +38,25 @@ function blank() {
   return { pus: 0, stats: {}, achievements: {}, pages: {}, wants: {}, curios: {}, owned: {}, equipped: {}, tips: {}, lastVisit: null };
 }
 
+// A save from an older build (or a mangled one) is merged over a blank save
+// field by field, keeping only values of the right type.
+function fromSave(saved) {
+  const s = blank();
+  if (!saved || typeof saved !== "object") return s;
+  for (const k of Object.keys(s)) {
+    const v = saved[k], want = s[k];
+    if (want && typeof want === "object") { if (v && typeof v === "object" && !Array.isArray(v)) s[k] = v; }
+    else if (k === "pus") { if (Number.isFinite(v) && v >= 0) s[k] = v; }
+    else if (typeof v === "string") s[k] = v;
+  }
+  return s;
+}
+
 export function createProgress() {
   let s = blank();
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) s = { ...s, ...JSON.parse(raw) };
+    if (raw) s = fromSave(JSON.parse(raw));
     else {
       const old = parseInt(localStorage.getItem(OLD_PUS_KEY), 10);
       if (old > 0) { s.pus = old; s.stats.pusTotal = old; }
@@ -47,12 +65,23 @@ export function createProgress() {
     if (s.curios.toenail) { s.curios.stone = (s.curios.stone || 0) + s.curios.toenail; delete s.curios.toenail; }
   } catch {}
 
-  let saveTimer = 0, wiped = false;
+  // Saves are batched (many small changes per second while playing); flush()
+  // writes right away and runs when the page is hidden or closed.
+  let saveTimer = 0, dirty = false, wiped = false;
+  const flush = () => {
+    clearTimeout(saveTimer);
+    if (!dirty || wiped) return;
+    dirty = false;
+    try { localStorage.setItem(KEY, JSON.stringify(s)); } catch {}
+  };
   const save = () => {
     if (wiped) return;
+    dirty = true;
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch {} }, 250);
+    saveTimer = setTimeout(flush, 250);
   };
+  window.addEventListener("pagehide", flush);
+  document.addEventListener("visibilitychange", () => { if (document.hidden) flush(); });
   const listeners = [];
   const emit = (type, data) => listeners.forEach((fn) => fn(type, data));
 
@@ -106,8 +135,8 @@ export function createProgress() {
     },
 
     // Tutorial tips: each one is shown once, ever.
-    tipSeen: (id) => !!(s.tips && s.tips[id]),
-    markTip(id) { s.tips = s.tips || {}; s.tips[id] = Date.now(); save(); },
+    tipSeen: (id) => !!s.tips[id],
+    markTip(id) { s.tips[id] = Date.now(); save(); },
 
     // Shop.
     owns: (id) => s.owned[id] || 0,

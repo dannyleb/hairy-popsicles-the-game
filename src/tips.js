@@ -6,6 +6,7 @@
 // once per visit, what they want.
 import { wantOf } from "./album.js";
 import { ITEMS, maxOf, priceOf } from "./shop.js";
+import { ACHIEVEMENTS } from "./progress.js";
 
 const FIRST = 5;      // seconds of play before the first tip
 const GAP = 14;       // seconds between tips
@@ -78,7 +79,7 @@ export function createTips({ progress, hud, story, scraps, upgrades, isNight, gu
       done: () => viewed.has("album:achievements"),
       menu: true,
       go: () => "achievements",
-      text: () => "Achievement unlocked. There are 18. See them all in the menu.",
+      text: () => `Achievement unlocked. There are ${ACHIEVEMENTS.length}. See them all in the menu.`,
     },
     {
       id: "shop",

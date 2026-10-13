@@ -131,6 +131,14 @@ export function createScraps({ world, player, hud, progress, upgrades }) {
       return pockets.splice(0, pockets.length);
     },
 
+    // A scrap Toad was too full to eat comes back to your pockets (if it fits).
+    putBack(kind) {
+      const max = upgrades().pockets;
+      if (used() + (SLOTS[kind] || 1) > max) return;
+      pockets.push(kind);
+      hud.setPockets(used(), max);
+    },
+
     update(dt, t) {
       for (const s of world.scraps) {
         if (s.gone) {

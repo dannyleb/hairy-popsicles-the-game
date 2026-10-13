@@ -22,7 +22,7 @@ const { Potrace } = potraceLib;
 const INK = "#2e1616"; // same as src/config.js INK
 
 // The shared character palette. `family` groups light/mid/shade tones.
-export const PALETTE = {
+const PALETTE = {
   peachLight: "#fcd8bd", peach: "#f5b28f", peachShade: "#df8b69",
   pinkLight: "#fbc3bb", pink: "#f0939d", pinkShade: "#d26a80",
   yellowLight: "#fbe5a6", yellow: "#f1c56c", yellowShade: "#d69c48",
@@ -31,7 +31,7 @@ export const PALETTE = {
   ink: INK,
 };
 
-export const STYLE = {
+const STYLE = {
   outline: 4,          // px, minimum outline thickness
   outlineFrac: 0.012,  // ...scaled to this share of the drawing's height
   median: 15,          // px, pencil-grain smoothing before grouping colors
@@ -80,7 +80,7 @@ function hsv(r, g, b) {
 }
 
 // Map an averaged scan color onto the shared palette.
-export function paletteFor([r, g, b], style = STYLE) {
+function paletteFor([r, g, b], style = STYLE) {
   const L = lum(r, g, b);
   const [h, s, v] = hsv(r, g, b);
   if (L < 58) return "ink";
@@ -95,6 +95,10 @@ export function paletteFor([r, g, b], style = STYLE) {
   const tier = L > style.light ? "Light" : L > style.mid ? "" : "Shade";
   return family + tier;
 }
+
+// Blue pencil (tears, sweat, drool): kept as color, and what animate.mjs
+// makes drip.
+export const isBlue = (r, g, b) => b > r + 18 && b > g - 6;
 
 // Two-pass chamfer distance (in px) from every pixel to the nearest `on`.
 export function distance(on, w, h) {
@@ -265,7 +269,7 @@ export async function traceDrawing(rgba, w, h, style = STYLE) {
     const L = gray[i], C = Math.max(r, g, b) - Math.min(r, g, b);
     // Blue pencil (tears, sweat, drool) is color, never line, even when it's
     // dark against pale skin.
-    const blue = b > r + 18 && b > g - 6;
+    const blue = isBlue(r, g, b);
     if (L < style.lineDark || (!blue && L < around[i] - style.lineContrast && L < style.lineMaxLum && C < style.lineMaxChroma)) rawLine[i] = 1;
   }
   components(rawLine, w, h, (px) => { if (px.length < style.lineSpeck) for (const p of px) rawLine[p] = 0; });
@@ -337,11 +341,11 @@ export async function traceDrawing(rgba, w, h, style = STYLE) {
 
   const layers = [tracePath(ring, w, h, INK, style.turd)];
   layers.push(tracePath(alpha, w, h, PALETTE[names[base]], style.turd));
-  for (const k of order.slice(1)) {
-    if (!area[k]) continue;
+  for (const c of order.slice(1)) {
+    if (!area[c]) continue;
     const m = new Uint8Array(n);
-    for (let p = 0; p < n; p++) m[p] = lab[p] === k ? 1 : 0;
-    layers.push(tracePath(m, w, h, PALETTE[names[k]], style.turd));
+    for (let p = 0; p < n; p++) m[p] = lab[p] === c ? 1 : 0;
+    layers.push(tracePath(m, w, h, PALETTE[names[c]], style.turd));
   }
   layers.push(tracePath(line, w, h, INK, 2));
 

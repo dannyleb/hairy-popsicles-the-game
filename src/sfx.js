@@ -11,15 +11,28 @@ export function unlock() {
     master.gain.value = 0.6;
     master.connect(ctx.destination);
   }
-  if (ctx.state === "suspended") ctx.resume();
+  if (ctx.state === "suspended" && !document.hidden) ctx.resume();
 }
 
-function noise(duration) {
-  const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * duration), ctx.sampleRate);
-  const d = buf.getChannelData(0);
-  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+// Silence everything (fly buzz, zone ambience) while the tab is hidden; this
+// also recovers iOS's "interrupted" audio state when you come back.
+document.addEventListener("visibilitychange", () => {
+  if (!ctx) return;
+  if (document.hidden) ctx.suspend();
+  else ctx.resume();
+});
+
+// One shared buffer of white noise; each sound plays a slice of it.
+const NOISE_SECONDS = 2;
+let noiseBuf = null;
+function noise() {
+  if (!noiseBuf) {
+    noiseBuf = ctx.createBuffer(1, ctx.sampleRate * NOISE_SECONDS, ctx.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
   const src = ctx.createBufferSource();
-  src.buffer = buf;
+  src.buffer = noiseBuf;
   return src;
 }
 
@@ -46,14 +59,15 @@ function tone(type, f0, f1, dur, peak = 0.4, delay = 0) {
 
 function burst(freq, q, dur, peak, type = "lowpass", delay = 0) {
   const t = ctx.currentTime + delay;
-  const n = noise(dur + 0.05);
+  const n = noise();
   const f = ctx.createBiquadFilter();
   f.type = type;
   f.frequency.value = freq;
   f.Q.value = q;
   n.connect(f);
   env(f, t, peak, 0.004, dur);
-  n.start(t);
+  const len = Math.min(dur + 0.05, NOISE_SECONDS);
+  n.start(t, Math.random() * (NOISE_SECONDS - len), len);
 }
 
 const ready = () => ctx && ctx.state === "running";
@@ -197,7 +211,7 @@ export const sfx = {
       ambience = {
         hub: mk(() => {}),
         west: mk((g) => {
-          const n = noise(4);
+          const n = noise();
           n.loop = true;
           const f = ctx.createBiquadFilter();
           f.type = "lowpass"; f.frequency.value = 260; f.Q.value = 8;

@@ -17,26 +17,43 @@ export function createMenus({ progress, hud, img, setPaused, onShopChange, onVie
   const curioUrls = Object.fromEntries(CURIOS.map((c) => [c.id, curioTexture(c.id).toDataURL()]));
   let tab = "pages", mode = null;
 
+  // Focus moves into the menu when it opens and back where it was when it
+  // closes, so keyboard and screen-reader users aren't left behind it.
+  let returnFocus = null;
   function open(m, t) {
     mode = m;
     if (t) tab = t;
+    if (menu.hidden) returnFocus = document.activeElement;
     menu.hidden = false;
     setPaused(true);
     render();
+    $("menuClose").focus();
   }
   function close() {
     menu.hidden = true;
     $("pageView").hidden = true;
     mode = null;
     setPaused(false);
+    if (returnFocus && returnFocus.isConnected) returnFocus.focus();
+    returnFocus = null;
   }
+  const closePage = () => {
+    $("pageView").hidden = true;
+    $("menuClose").focus();
+  };
   $("menuClose").addEventListener("click", close);
   menu.addEventListener("click", (e) => { if (e.target === menu) close(); });
+  $("pageView").addEventListener("click", (e) => { if (e.target === $("pageView")) closePage(); });
+  // Escape closes the card viewer first, then the menu. preventDefault tells
+  // main.js's pause key not to reopen it.
   window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !menu.hidden) { close(); e.stopImmediatePropagation(); }
+    if (e.key !== "Escape" || menu.hidden) return;
+    e.preventDefault();
+    if (!$("pageView").hidden) closePage();
+    else close();
   });
   $("pauseBtn").addEventListener("click", () => open("pause"));
-  $("pageClose").addEventListener("click", () => ($("pageView").hidden = true));
+  $("pageClose").addEventListener("click", closePage);
 
   // What's new since you last looked: the menu button pulses until you've
   // seen it, and the rows and tabs that have something new get a dot.
@@ -47,12 +64,17 @@ export function createMenus({ progress, hud, img, setPaused, onShopChange, onVie
   const refreshBadge = () => $("pauseBtn").classList.toggle("new", news.size > 0);
   const flag = (kind) => { news.add(kind); refreshBadge(); };
   const seen = (kind) => { if (news.delete(kind)) refreshBadge(); };
-  function checkAfford() {
+  // quiet: note what's already affordable without flagging it (on load, so a
+  // returning player's button doesn't pulse for things they've seen).
+  function checkAfford(quiet = false) {
     for (const it of ITEMS) {
       const lvl = progress.owns(it.id);
       if (lvl >= maxOf(it)) continue;
       const key = `${it.id}:${lvl}`;
-      if (progress.pus >= priceOf(it, lvl) && !affordSeen.has(key)) { affordSeen.add(key); flag("shop"); }
+      if (progress.pus >= priceOf(it, lvl) && !affordSeen.has(key)) {
+        affordSeen.add(key);
+        if (!quiet) flag("shop");
+      }
     }
   }
   progress.on((type) => {
@@ -61,8 +83,8 @@ export function createMenus({ progress, hud, img, setPaused, onShopChange, onVie
     else if (type === "curio") flag("curios");
     else if (type === "pus") checkAfford();
   });
-  checkAfford();
-  const dot = (kind) => (news.has(kind) ? `<i class="newDot" aria-label="new"></i>` : "");
+  checkAfford(true);
+  const dot = (kind) => (news.has(kind) ? `<i class="newDot" role="img" aria-label="new"></i>` : "");
 
   // A tip can point at one row of the pause menu ("shop", "album",
   // "achievements"); it pulses until you open it.
@@ -88,7 +110,7 @@ export function createMenus({ progress, hud, img, setPaused, onShopChange, onVie
       const want = wantOf(p.id);
       const n = progress.wantCount(p.id);
       const prog = !got && want.n ? ` <b>${Math.min(n, want.n)}/${want.n}</b>` : "";
-      return `<button class="pageCard ${got ? "got" : "locked"}" data-id="${p.id}">
+      return `<button class="pageCard ${got ? "got" : "locked"}" data-id="${p.id}"${got ? "" : ` aria-disabled="true"`}>
         <img src="assets/sprites/${p.sprite}.webp" alt="" />
         <span class="pName">${got ? esc(p.name) : "???"}</span>
         <span class="pWant">${got ? "card earned" : esc(want.text) + prog}</span>
@@ -106,6 +128,7 @@ export function createMenus({ progress, hud, img, setPaused, onShopChange, onVie
     $("pageNote").hidden = !note;
     $("pageWant").textContent = `They wanted: ${wantOf(id).text}`;
     $("pageView").hidden = false;
+    $("pageClose").focus();
   }
 
   function renderAchievements() {
@@ -114,7 +137,7 @@ export function createMenus({ progress, hud, img, setPaused, onShopChange, onVie
       const k = Math.min(1, progress.stat(a.stat) / a.goal);
       return `<div class="ach ${got ? "got" : ""}">
         <span class="achMark">${got ? "&#10003;" : ""}</span>
-        <span class="achTxt"><b>${got ? esc(a.name) : esc(a.name)}</b><small>${esc(a.text)}</small>
+        <span class="achTxt"><b>${esc(a.name)}</b><small>${esc(a.text)}</small>
         ${got ? "" : `<i class="achBar"><i style="width:${Math.round(k * 100)}%"></i></i>`}</span>
       </div>`;
     }).join("")}</div>`;
@@ -205,12 +228,14 @@ export function createMenus({ progress, hud, img, setPaused, onShopChange, onVie
     body.innerHTML = `<p class="menuHint">Your self-portrait, as it stands. Save it or share it.</p>
       <div class="cardWrap"><canvas id="cardPreview"></canvas></div>
       <button id="shareBtn" class="chunk">Save / Share</button>`;
+    // Grab this render's elements before waiting: if you switch tabs and
+    // back meanwhile, the stale render must not wire up the new button too.
+    const pv = $("cardPreview"), btn = $("shareBtn");
     const card = await makeCard();
-    const pv = $("cardPreview");
-    if (!pv) return;
+    if (!pv.isConnected) return;
     pv.width = card.width; pv.height = card.height;
     pv.getContext("2d").drawImage(card, 0, 0);
-    $("shareBtn").addEventListener("click", () => {
+    btn.addEventListener("click", () => {
       card.toBlob(async (blob) => {
         const file = new File([blob], "hairy-popsicles-self-portrait.png", { type: "image/png" });
         try {

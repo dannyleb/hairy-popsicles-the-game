@@ -3,16 +3,21 @@
 | Folder | What | Shipped to the site? |
 |---|---|---|
 | `concept/` | Original scans, one drawing per file, named by character | No (build skips it) |
-| `sprites/` | Processed sprites made from `concept/` | Yes |
+| `sprites/` | Processed sprites made from `concept/`, plus idle-animation strips (`*-anim.webp`, `anim.json`) | Yes |
+| `album/` | Web-sized scans shown in the Self-Portrait Album (`npm run album`) | Yes |
 
 ## Adding a new drawing
 
 1. Scan it (white/off-white paper, the more blank margin the better) and
    drop it in `concept/` as `<name>.jpg`.
 2. `npm run sprites -- <name>` (or plain `npm run sprites` to redo all).
+   This also rebuilds that character's idle-animation strip.
 3. Check `sprites/<name>.webp`. If one page had several separate drawings
    on it, they come out as `<name>.webp`, `<name>-2.webp`, ... largest first.
 4. Add the character to `src/roster.js` (height, stick or not, position).
+5. Give them an album card: an entry in `PAGES` (`src/album.js`) with what
+   they want, a line in `src/album-notes.js`, and `npm run album` for the
+   web-sized scan.
 
 ## What the pipeline does
 

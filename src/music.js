@@ -44,7 +44,7 @@ export function createMusic(buttons) {
     wanted = true;
     if (!available || muted || document.hidden) return;
     if (!audio.src) audio.src = TRACKS[track];
-    if (!audio.paused) return fadeTo(target);
+    if (!audio.paused) return ending ? undefined : fadeTo(target);
     audio.play().then(() => fadeTo(target)).catch(() => {});
   }
 
@@ -63,9 +63,11 @@ export function createMusic(buttons) {
     }
   }
 
+  // Menu vs gameplay level. (In a track's closing fade, just remember it:
+  // the next track fades in to the new level.)
   function setMode(mode) {
     target = LEVEL[mode];
-    if (!audio.paused) fadeTo(target);
+    if (!audio.paused && !ending) fadeTo(target);
   }
 
   function toggle() {

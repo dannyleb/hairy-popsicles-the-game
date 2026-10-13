@@ -12,7 +12,7 @@
 import sharp from "sharp";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { distance } from "./trace.mjs";
+import { distance, isBlue } from "./trace.mjs";
 
 const DIR = "assets/sprites";
 const SIZE = 512;        // frame long edge
@@ -23,9 +23,21 @@ const SWAY_MAX = 12;     // px
 const STRETCH = 0.2;     // drips stretch up to this share of their height
 const SKIP = new Set(["snoot-2"]); // the moon
 
-const isBlue = (r, g, b) => b > r + 18 && b > g - 6;
+
+// Seeded per character, so re-running gives the same strips (no churn).
+function rng(seed) {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(s ^ (s >>> 15), s | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const seedOf = (name) => [...name].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
 
 async function animate(name) {
+  const rand = rng(seedOf(name));
   const { data, info } = await sharp(join(DIR, `${name}.webp`))
     .resize(SIZE, SIZE, { fit: "inside" }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const w = info.width, h = info.height, n = w * h;
@@ -66,7 +78,7 @@ async function animate(name) {
         if (q >= 0 && liquid[q] && comp[q] < 0) { comp[q] = comps.length; queue[tail++] = q; }
       }
     }
-    comps.push({ top, height: Math.max(1, bot - top), phase: Math.random() * Math.PI * 2, size: tail });
+    comps.push({ top, height: Math.max(1, bot - top), phase: rand() * Math.PI * 2, size: tail });
   }
   for (let i = 0; i < n; i++) if (comp[i] >= 0 && comps[comp[i]].size < 30) comp[i] = -1;
 
