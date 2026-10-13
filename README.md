@@ -82,10 +82,20 @@ npm run check     # lint + build (what CI runs)
 npm run sprites   # re-cut sprites from assets/concept/ and rebuild their idle animation strips
 npm run sprites -- weeper   # just one character (or several names)
 npm run album     # web-sized scans for the Self-Portrait Album (assets/album/)
+npm run itch      # build + hairy-popsicles-web.zip for a manual itch.io upload
 ```
 
 Edits to `public/` or `assets/` need a dev server restart. `dist/` is
 generated and not committed.
+
+## itch.io
+
+The same build ships to itch.io. `docs/itch/page.md` has the page draft
+(settings, description, tags), the cover and screenshots, and the one-time
+setup for automatic uploads: once the `BUTLER_API_KEY` secret and the
+`ITCH_TARGET` variable are set on the repo, every push to `main` also pushes
+the build to itch with butler (the `itch` job in
+`.github/workflows/pages.yml`).
 
 ## How it plays
 
@@ -254,6 +264,8 @@ tools/cutout.mjs     paper keying, splitting, sprite export (then runs animate.m
 tools/trace.mjs      rebuild as vector art: traced lines, fixed flesh palette, cel shade, outline
 tools/animate.mjs    idle strips: swaying hair, stretching drips (seeded, so re-runs don't churn)
 tools/album.mjs      web-sized scans for the album
+tools/itch.mjs       zip the build for itch.io
+docs/itch/           itch.io page draft, cover, screenshots
 build.mjs            esbuild build and dev server; cache-busting hashes
-.github/workflows/pages.yml   lint + build on every push/PR; deploy main to GitHub Pages
+.github/workflows/pages.yml   lint + build on every push/PR; deploy main to GitHub Pages and itch.io
 ```

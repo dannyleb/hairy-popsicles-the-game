@@ -1,4 +1,5 @@
 node_modules/
 dist/
+hairy-popsicles-web.zip
 *.log
 .DS_Store

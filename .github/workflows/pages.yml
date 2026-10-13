@@ -1,6 +1,13 @@
 name: Deploy to GitHub Pages
 
-# Every push and pull request is linted and built; only main is deployed.
+# Every push and pull request is linted and built; only main is deployed,
+# to GitHub Pages and (once it's set up) to itch.io.
+#
+# itch.io setup (one time): create the game on itch (Kind: HTML), then in
+# this repo's Settings -> Secrets and variables -> Actions add
+#   secret   BUTLER_API_KEY   an itch API key (itch: Settings -> API keys)
+#   variable ITCH_TARGET      <itch username>/<game url name>, e.g. danny/hairy-popsicles
+# Until ITCH_TARGET is set, the itch job is skipped.
 on:
   push:
     branches:
@@ -63,3 +70,29 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  itch:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.ITCH_TARGET != ''
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Build
+        run: npm ci && npm run build
+
+      - name: Push to itch.io
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+          ITCH_TARGET: ${{ vars.ITCH_TARGET }}
+        run: |
+          curl -sSfL -o butler.zip https://broth.itch.ovh/butler/linux-amd64/LATEST/archive/default
+          unzip -q butler.zip -d butler && chmod +x butler/butler
+          ./butler/butler push dist "$ITCH_TARGET:html5" --userversion "${GITHUB_SHA::7}"

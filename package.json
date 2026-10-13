@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "sprites": "node tools/cutout.mjs",
     "album": "node tools/album.mjs",
+    "itch": "node build.mjs && node tools/itch.mjs",
     "check": "npm run lint && npm run build"
   },
   "devDependencies": {

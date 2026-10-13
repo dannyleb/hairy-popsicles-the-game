@@ -38,7 +38,12 @@ export function createLife({ world, player, hud, story, scraps, isNight = () => 
       for (let i = 0; i < 30; i++) {
         const x = Math.max(lo, Math.min(hi, player.x + (Math.random() < 0.5 ? -1 : 1) * rand(5, 11)));
         const g = rand(1, AREA.front - 1);
-        if (world.people.every((p) => p === redeye || Math.hypot(p.x - x, (p.g - g) * DEPTH) > p.radius + 2)) {
+        // Clear of everyone, drawings included (heads on sticks are wider
+        // than where you bump into them): side by side with room, or far.
+        const clear = (p) => p === redeye || !p.visible
+          || Math.abs(p.x - x) > (p.w + redeye.w) / 2 + 0.3
+          || Math.hypot(p.x - x, (p.g - g) * DEPTH) > p.radius + 4;
+        if (world.people.every(clear)) {
           Object.assign(redeye, { x, g, home: [x, g], out: true, visible: true, scale: 1 });
           squash(redeye, 1.5);
           break;
