@@ -100,12 +100,23 @@ is itself the action button, next to round SLAP and WATER buttons, and the
 top HUD is compacted. The title screen shows touch instructions.
 
 **Feeding Toad.** Walk over crumbs and curly pubic hairs to pocket them;
-swat house flies out of the air (Space) and pick them up. Pockets hold 12
-(more with upgrades); the POCKETS bar under Toad's belly fills up and turns
-red and pulses when you're full.
+swat house flies out of the air (Space) and pick them up. Rarer finds take
+more pocket room but are worth more to Toad:
+
+| Scrap | How common (per zone) | Pocket slots | Worth to Toad |
+|---|---|---|---|
+| Crumb | 10 | 1 | 1 |
+| Pubic hair | 7 | 1 | 1 |
+| Fly (swat it first) | 3 | 1 | 3 |
+| Toenail clipping | 3 | 2 | 4 |
+| Mouse droppings | 1 (slow to come back) | 3 | 8 |
+
+Pockets hold 12 slots (more with upgrades); the POCKETS bar under Toad's
+belly fills up and turns red and pulses when you're full. `PER_ZONE` in
+`src/scraps.js`, `SLOTS` and `FOOD` in `src/config.js`.
 Press E next to Toad to feed him everything you're carrying (if a pimple is
 closer to you than Toad, E pops it instead). Values are in
-`FOOD` in `src/config.js` (crumb/hair 1, fly 3). Scraps respawn in their
+`FOOD` in `src/config.js`. Scraps respawn in their
 zone after a while. Big meals, carried over by hand:
 
 - Slap Pimples until what's growing in him pops out (5).

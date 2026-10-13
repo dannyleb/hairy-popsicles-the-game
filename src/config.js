@@ -33,6 +33,9 @@ export const STAGES = [
 ];
 
 // What things are worth to Toad.
-export const FOOD = { crumb: 1, pube: 1, fly: 3, blob: 5, roast: 8, eyeball: 10 };
+export const FOOD = { crumb: 1, pube: 1, fly: 3, toenail: 4, dropping: 8, blob: 5, roast: 8, eyeball: 10 };
+
+// Pocket slots each scrap takes. Rarer finds are bigger but worth more.
+export const SLOTS = { crumb: 1, pube: 1, fly: 1, toenail: 2, dropping: 3 };
 
 export const POCKETS = 12;

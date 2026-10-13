@@ -43,6 +43,8 @@ export function createProgress() {
       const old = parseInt(localStorage.getItem(OLD_PUS_KEY), 10);
       if (old > 0) { s.pus = old; s.stats.pusTotal = old; }
     }
+    // The toenail curio became a kidney stone (toenails are Toad food now).
+    if (s.curios.toenail) { s.curios.stone = (s.curios.stone || 0) + s.curios.toenail; delete s.curios.toenail; }
   } catch {}
 
   let saveTimer = 0, wiped = false;

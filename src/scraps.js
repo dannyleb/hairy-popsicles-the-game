@@ -1,9 +1,11 @@
 // Toad food lying around the page: crumbs and curly pubic hairs to walk
-// over, and house flies that buzz about (swat them, then pick them up).
-// Everything goes in your pockets until you feed it to Toad. Eaten scraps
-// turn up again somewhere in the same zone after a while.
-import { AREA, DEPTH } from "./config.js";
-import { crumbTexture, flyTexture, pubeTexture, rng } from "./ink.js";
+// over, rarer toenail clippings and the odd pile of mouse droppings, and
+// house flies that buzz about (swat them, then pick them up). Everything goes
+// in your pockets until you feed it to Toad. Bigger finds take more pocket
+// slots (SLOTS in config.js) but Toad values them more. Eaten scraps turn up
+// again somewhere in the same zone after a while (the rare ones take longer).
+import { AREA, DEPTH, SLOTS } from "./config.js";
+import { crumbTexture, droppingTexture, flyTexture, pubeTexture, rng, toenailTexture } from "./ink.js";
 import { floorDist, makeEntity, squash } from "./world.js";
 import { sfx } from "./sfx.js";
 
@@ -12,8 +14,11 @@ const ZONES = [
   { name: "west", x0: AREA.minX, x1: -17 },
   { name: "east", x0: 17, x1: AREA.maxX },
 ];
-const PER_ZONE = { crumb: 9, pube: 7, fly: 3 };
+const PER_ZONE = { crumb: 10, pube: 7, fly: 3, toenail: 3, dropping: 1 };
 const RESPAWN = [35, 70];
+const RESPAWN_SLOW = { toenail: 1.5, dropping: 2.5 }; // rare things come back slower
+const FOUND = { toenail: "toenail!", dropping: "mouse droppings!!" };
+const STAT = { pube: "hairs", crumb: "crumbs", fly: "fliesPocketed", toenail: "toenails", dropping: "droppings" };
 const PICK_RADIUS = 1;
 
 export function createScraps({ world, player, hud, progress, upgrades }) {
@@ -21,9 +26,12 @@ export function createScraps({ world, player, hud, progress, upgrades }) {
   const img = {
     crumb: Array.from({ length: 4 }, (_, i) => crumbTexture(600 + i)),
     pube: Array.from({ length: 4 }, (_, i) => pubeTexture(700 + i)),
+    toenail: Array.from({ length: 3 }, (_, i) => toenailTexture(800 + i)),
+    dropping: Array.from({ length: 2 }, (_, i) => droppingTexture(900 + i)),
     flyUp: flyTexture(true), flyDown: flyTexture(false), flyDead: flyTexture(false, true),
   };
   const pockets = [];
+  const used = () => pockets.reduce((n, k) => n + (SLOTS[k] || 1), 0);
   world.scraps = [];
 
   const clear = (x, g) =>
@@ -46,7 +54,7 @@ export function createScraps({ world, player, hud, progress, upgrades }) {
   }
 
   function make(kind, zone) {
-    const size = { crumb: 0.62 + rand() * 0.22, pube: 0.5 + rand() * 0.12, fly: 0.85 }[kind];
+    const size = { crumb: 0.62 + rand() * 0.22, pube: 0.5 + rand() * 0.12, fly: 0.85, toenail: 0.68 + rand() * 0.08, dropping: 0.7 }[kind];
     const pic = kind === "fly" ? img.flyUp : img[kind][Math.floor(rand() * img[kind].length)];
     const s = makeEntity(pic, size, 0, 0, { kind, zone, shadow: kind === "fly", radius: 0.3 });
     place(s);
@@ -88,6 +96,8 @@ export function createScraps({ world, player, hud, progress, upgrades }) {
 
   return {
     pockets,
+    // Pocket slots in use (a toenail takes 2, mouse droppings 3).
+    used,
     picture: (kind) => (kind === "fly" ? img.flyDead : img[kind][0]),
 
     // Slap target among live flies in reach (they can be up in the air).
@@ -132,23 +142,27 @@ export function createScraps({ world, player, hud, progress, upgrades }) {
           if (s.dead && s.lift > 0) s.lift = Math.max(0, s.lift - dt * 6);
           else flyUpdate(s, dt, t);
         }
-        // Pick up: crumbs, hairs and dead flies on the ground.
+        // Pick up anything on the ground (flies once they're swatted down).
         const ground = s.kind !== "fly" || (s.dead && s.lift === 0);
         if (ground && floorDist(player, s) < PICK_RADIUS) {
-          const max = upgrades().pockets;
-          if (pockets.length >= max) {
-            if (!s.warned) { hud.toast("Your pockets are full. Go feed Toad."); s.warned = true; }
+          const max = upgrades().pockets, size = SLOTS[s.kind] || 1;
+          if (used() + size > max) {
+            if (!s.warned) {
+              hud.toast(used() >= max ? "Your pockets are full. Go feed Toad."
+                : `No room: that takes ${size} pocket slots. Go feed Toad.`);
+              s.warned = true;
+            }
             continue;
           }
           s.warned = false;
           pockets.push(s.kind);
           s.gone = true;
           s.visible = false;
-          s.respawn = RESPAWN[0] + Math.random() * (RESPAWN[1] - RESPAWN[0]);
+          s.respawn = (RESPAWN[0] + Math.random() * (RESPAWN[1] - RESPAWN[0])) * (RESPAWN_SLOW[s.kind] || 1);
           sfx.pick();
-          hud.setPockets(pockets.length, max);
-          hud.floatText("+1", player, "#fbe5a6");
-          progress.add({ pube: "hairs", crumb: "crumbs", fly: "fliesPocketed" }[s.kind]);
+          hud.setPockets(used(), max);
+          hud.floatText(FOUND[s.kind] || `+${size}`, player, FOUND[s.kind] ? "#f1c56c" : "#fbe5a6");
+          progress.add(STAT[s.kind]);
         }
       }
     },

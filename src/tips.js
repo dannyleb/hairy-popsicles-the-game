@@ -18,7 +18,7 @@ export function createTips({ progress, hud, story, scraps, upgrades, isNight, gu
   const told = new Set();     // whose wants you've been told this visit
   let elapsed = 0, since = GAP, fullFor = 0, current = null, shownFor = 0, talkedToWanter = false;
 
-  const pocketsFull = () => scraps.pockets.length >= upgrades().pockets;
+  const pocketsFull = () => scraps.used() >= upgrades().pockets;
   const pocketsItem = ITEMS.find((i) => i.id === "pockets");
   const canAffordPockets = () => {
     const lvl = progress.owns("pockets");
@@ -36,7 +36,7 @@ export function createTips({ progress, hud, story, scraps, upgrades, isNight, gu
       id: "pickup",
       when: () => !scraps.pockets.length && story.stage === 0 && story.belly === 0 && story.hungry,
       done: () => scraps.pockets.length > 0 || story.belly > 0,
-      text: () => "Toad eats crumbs, curly hairs and flies. Walk over them to stuff your pockets.",
+      text: () => "Toad eats crumbs, curly hairs and flies. Walk over them to stuff your pockets. Rare toenails and mouse droppings take more room but he loves them.",
     },
     {
       id: "feed",

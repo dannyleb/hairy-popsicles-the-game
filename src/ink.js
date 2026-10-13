@@ -404,6 +404,64 @@ export function crumbTexture(seed) {
   return c;
 }
 
+// A toenail clipping: a yellowed crescent with a grimy inner edge.
+export function toenailTexture(seed) {
+  const rand = rng(seed);
+  const [c, ctx] = canvas(130, 80);
+  ctx.translate(65, 44);
+  ctx.rotate((rand() - 0.5) * 0.6);
+  const w = 48 + rand() * 8, bow = 26 + rand() * 8, thick = 11 + rand() * 4;
+  const crescent = () => {
+    ctx.beginPath();
+    ctx.moveTo(-w, 6);
+    ctx.quadraticCurveTo(0, -bow * 2 + 6, w, 6);
+    ctx.quadraticCurveTo(w + 4, 12, w - 6, 12);
+    ctx.quadraticCurveTo(0, -bow * 2 + 6 + thick * 2, -w + 6, 12);
+    ctx.quadraticCurveTo(-w - 4, 12, -w, 6);
+    ctx.closePath();
+  };
+  crescent();
+  ctx.fillStyle = "#f1dfa8";
+  ctx.fill();
+  ctx.save();
+  ctx.clip();
+  ctx.strokeStyle = "#c9a96a";
+  ctx.lineWidth = 7;
+  ctx.beginPath();
+  ctx.moveTo(-w + 8, 12);
+  ctx.quadraticCurveTo(0, -bow * 2 + 6 + thick * 2, w - 8, 12);
+  ctx.stroke();
+  ctx.restore();
+  crescent();
+  ctx.lineWidth = 5;
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = INK;
+  ctx.stroke();
+  return c;
+}
+
+// Mouse droppings: three dark, rice-shaped pellets in a little pile.
+export function droppingTexture(seed) {
+  const rand = rng(seed);
+  const [c, ctx] = canvas(130, 80);
+  const pellets = [[38, 50, 0.3], [78, 54, -0.25], [58, 30, 0.9]];
+  for (const [x, y, a] of pellets) {
+    const ang = a + (rand() - 0.5) * 0.5;
+    ctx.beginPath();
+    ctx.ellipse(x, y, 20 + rand() * 4, 9 + rand() * 2, ang, 0, Math.PI * 2);
+    ctx.fillStyle = "#5b3a24";
+    ctx.fill();
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = INK;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(x - Math.cos(ang) * 6, y - 3, 7, 2.5, ang, 0, Math.PI * 2);
+    ctx.fillStyle = "#8a6142";
+    ctx.fill();
+  }
+  return c;
+}
+
 // A curly pubic hair lying on the skin: a tight, uneven corkscrew.
 export function pubeTexture(seed) {
   const rand = rng(seed);
@@ -577,7 +635,7 @@ export function stainTexture(seed) {
 }
 
 export const CURIOS = [
-  { id: "toenail", name: "Toenail Clipping" },
+  { id: "stone", name: "Kidney Stone" },
   { id: "tooth", name: "Baby Tooth" },
   { id: "lens", name: "Lost Contact Lens" },
   { id: "scab", name: "Old Scab" },
@@ -595,9 +653,13 @@ export function curioTexture(id) {
   ctx.lineCap = "round";
   const fillStroke = (fill) => { ctx.fillStyle = fill; ctx.fill(); ctx.stroke(); };
   ctx.beginPath();
-  if (id === "toenail") {
-    ctx.moveTo(18, 70); ctx.quadraticCurveTo(60, 20, 102, 70); ctx.quadraticCurveTo(60, 52, 18, 70);
-    fillStroke("#f3e3c4");
+  if (id === "stone") {
+    blob(ctx, 60, 62, 38, 30, rng(31), 8, 0.38);
+    fillStroke("#d9b56a");
+    ctx.beginPath(); ctx.fillStyle = "#b8904a";
+    ctx.moveTo(44, 70); ctx.lineTo(58, 52); ctx.lineTo(70, 74); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.fillStyle = "#f3dc9c";
+    ctx.ellipse(50, 48, 9, 5, -0.5, 0, Math.PI * 2); ctx.fill();
   } else if (id === "tooth" || id === "wisdom") {
     const big = id === "wisdom";
     ctx.moveTo(30, 30); ctx.quadraticCurveTo(60, big ? 10 : 18, 90, 30);

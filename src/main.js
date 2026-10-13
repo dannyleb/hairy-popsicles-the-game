@@ -108,7 +108,7 @@ async function boot() {
     const u = ups();
     player.cosmetics = u.cosmetics;
     player.speedMul = u.speed;
-    hud.setPockets(scraps.pockets.length, u.pockets);
+    hud.setPockets(scraps.used(), u.pockets);
   };
   const tips = createTips({ progress, hud, story, scraps, upgrades: ups, isNight, guide: (to) => menus.setGuide(to) });
   const menus = createMenus({

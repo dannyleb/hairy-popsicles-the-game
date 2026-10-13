@@ -163,6 +163,31 @@ export function createStage(canvas) {
       if (e.cosmetics) for (const c of e.cosmetics) drawCosmetic(ctx, c, -e.w / 2 * U, -e.h * U, e.w * U, e.h * U);
     }
     ctx.restore();
+    if (GLINT.has(e.kind)) glint(e);
+  }
+
+  // Rare finds (toenails, mouse droppings) twinkle so they catch your eye.
+  const GLINT = new Set(["toenail", "dropping"]);
+  function glint(e) {
+    const k = Math.max(0, Math.sin(clock * 3.2 + e.x * 1.7));
+    if (k < 0.05) return;
+    const x = X(e.x) + e.w * 0.35 * U, y = Y(e.g) - (e.h + e.lift) * U - 0.05 * U, r = (0.22 + k * 0.2) * U;
+    ctx.save();
+    ctx.globalAlpha = k;
+    ctx.translate(x, y);
+    ctx.rotate(clock * 0.8);
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2, rr = i % 2 ? r * 0.28 : r;
+      ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+    }
+    ctx.closePath();
+    ctx.fillStyle = "#fff6c8";
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = INK;
+    ctx.stroke();
+    ctx.restore();
   }
 
   function drawClump(c, k, alpha = 1) {

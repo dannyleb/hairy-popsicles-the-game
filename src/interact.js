@@ -29,7 +29,7 @@ export function createInteractions({ world, player, hud, story, pus, scraps, alb
     const kind = giftFor(p);
     if (kind) {
       scraps.pockets.splice(scraps.pockets.indexOf(kind), 1);
-      hud.setPockets(scraps.pockets.length, upgrades().pockets);
+      hud.setPockets(scraps.used(), upgrades().pockets);
       sfx.pick();
       say(p, { pube: "mmm. strands.", crumb: "crunchy. thank you.", fly: "*deep sniff*" }[kind] || "thanks.");
       album.onGive(p);
