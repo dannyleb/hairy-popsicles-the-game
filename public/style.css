@@ -176,6 +176,8 @@ html, body {
 .chunk:hover:not(:disabled) { transform: rotate(-2deg) scale(1.04); }
 .chunk:disabled { background: var(--paper); cursor: wait; }
 .fine { font-size: 14px !important; opacity: 0.55; margin-top: 18px !important; }
+.fine.credit { opacity: 0.8; margin-top: 14px !important; }
+.fine.credit + .fine { margin-top: 2px !important; }
 
 @media (max-height: 500px) {
   #startOverlay { padding: 8px 16px; }
