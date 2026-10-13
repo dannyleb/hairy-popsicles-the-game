@@ -84,7 +84,7 @@ export function paletteFor([r, g, b], style = STYLE) {
   const L = lum(r, g, b);
   const [h, s, v] = hsv(r, g, b);
   if (L < 58) return "ink";
-  if (s > 0.22 && h >= 175 && h < 265) return v > 0.62 ? "blue" : "blueShade";
+  if (s > 0.1 && h >= 185 && h < 260) return v > 0.62 ? "blue" : "blueShade";
   if (s > 0.42 && (h >= 342 || h < 10) && v < 0.86) return "red";
   let family;
   if (s < 0.1) family = "peach";                    // whites, greys

@@ -30,6 +30,12 @@ framework, no server code, deployed to GitHub Pages like
   and then, Shiv and Balloon Man wander, Little Guy hops, Fairy hovers,
   criers/sweaters/droolers shed drops that land as collectible teardrops,
   and people mutter about themselves as you pass (`mutter` in roster.js).
+- **Hair sways, faces drip** (`tools/animate.mjs`): every sprite with
+  stray hair or blue liquid gets a 6-frame idle strip (`<name>-anim.webp`).
+  Strands sway sideways in proportion to their distance from the body, so
+  roots stay put; tears and sweat slowly stretch downward. Falling drops
+  land as puddles, and stepping in a puddle (or a pus stain) splashes
+  (`src/splash.js`).
 - **Swollen pimples everywhere**, random sizes: domes on the floor and
   round ones on the wall.
 - **Traced 2D illustration.** The scans aren't shown as-is: each one is
@@ -51,7 +57,7 @@ framework, no server code, deployed to GitHub Pages like
 | Rendering | Canvas 2D, no engine |
 | Language | Plain JavaScript (ES modules), no framework, no runtime dependencies |
 | Bundler | esbuild: one IIFE bundle targeting ES2019 |
-| Art pipeline | `tools/cutout.mjs` + `tools/trace.mjs` with [sharp](https://sharp.pixelplumbing.com/) and [potrace](https://www.npmjs.com/package/potrace) (dev only) |
+| Art pipeline | `tools/cutout.mjs` + `tools/trace.mjs` + `tools/animate.mjs` with [sharp](https://sharp.pixelplumbing.com/) and [potrace](https://www.npmjs.com/package/potrace) (dev only) |
 | Linting | ESLint 9 (flat config, `eslint.config.js`) |
 | Hosting | GitHub Pages, deployed by GitHub Actions on push to `main` |
 | Runtime | Node 20+ (build only) |
@@ -63,7 +69,8 @@ npm install
 npm run dev       # dev server at http://localhost:8080, rebuilds on reload
 npm run build     # production build into dist/
 npm run lint      # ESLint over src/, tools/ and the build script
-npm run sprites   # re-cut sprites from assets/concept/ (see assets/README.md)
+npm run sprites   # re-cut sprites from assets/concept/ and rebuild idle animation strips
+npm run album     # web-sized scans for the Self-Portrait Album (assets/album/)
 ```
 
 Edits to `public/` or `assets/` need a dev server restart. `dist/` is
@@ -79,11 +86,13 @@ Toad sits in his corner of the page, starving. Three verbs:
 | Grab | E | GRAB | Feed Toad / pick up / drop / talk |
 | Water | Q | WATER | Splash from your can; walk into blue teardrops to refill it |
 
-Walk with WASD / arrows (Shift to run), or click where to go.
+Walk with WASD / arrows (Shift to run), or click where to go. Esc / P or
+the menu button (top right) pauses.
 
 **On phones** (detected automatically, `html.touch`) the UI switches to
-tap-to-move: tap anywhere and the character walks there (running if it's
-far); tap Toad to feed him, a fly to swat it, a pimple to pop it, anyone to
+touch steering: press and hold anywhere and the character walks toward
+your thumb (running if it's far), following it as you drag; let go and
+they stop. A quick tap acts on what you tapped: tap Toad to feed him, a fly to swat it, a pimple to pop it, anyone to
 talk. There's no D-pad; the context prompt ("FEED TOAD (6)", "TALK", ...)
 is itself the action button, next to round SLAP and WATER buttons, and the
 top HUD is compacted. The title screen shows touch instructions.
@@ -111,13 +120,45 @@ point, shown top-left and saved in the browser (`localStorage`), to be
 spent on something later. Popped pimples swell back up after 40-75 s.
 Walking on the skin squelches.
 
+**Combos.** Pop pimples within 1.8 s of each other: x2 at 3, x3 at 5,
+x5 at 8, with rising pitch and screen shake.
+
+**Surprises.** 1 in 40 pimples is golden (a jackpot of pus); 1 in 22 pops
+leaves a mystery glob holding a curio (toenail, tooth, ...) for your
+collection. Red Eye only comes out at night.
+
+**Self-Portrait Album** (pause menu). Every character has a page that
+starts as a silhouette. Do the small, gross thing they want (`PAGES` in
+`src/album.js`: talk, slap, water, bring scraps, pay pus, after dark, ...)
+and it fills in with the original pencil scan plus the artist's note
+(`src/album-notes.js`, one line per character, empty until written). Each
+page pays 15 pus. Antenna (you) fills in last.
+
+**Mirror's shop.** Talk to Mirror to spend pus: bigger pockets, bigger
+can, glob magnet, fly bait, faster feet, and cosmetics drawn on you
+(wart, unibrow, stain, tuft, drool). `ITEMS` in `src/shop.js`.
+
+**Achievements** (18, gross names) in `ACHIEVEMENTS` in `src/progress.js`.
+
+**Daily.** Toad craves one food each day (counts double). Coming back
+gives a gift of pus that grows with total days visited; missing days
+never loses anything.
+
+**Share card.** The pause menu builds a 1080x1350 image of you (with
+cosmetics), your stats and your latest page, shared with the phone's
+share sheet or downloaded.
+
+**What's saved.** Pus, pages, curios, purchases, stats and achievements
+persist per browser (`localStorage`, `src/progress.js`). Toad's belly and
+opened zones reset each session.
+
 All names and dialogue are placeholders. `?debug` in the URL exposes
-`window.game` (player, world, story) for testing.
+`window.game` (player, world, story, progress, menus, ...) for testing.
 
 ## Project structure
 
 ```
-src/main.js          image loading, game loop, start screen wiring
+src/main.js          image loading, game loop, start screen, pointer (hold/tap) wiring
 src/config.js        stage size, walkable area, player, colors
 src/roster.js        every character: sprite, size, stick, position, lines; drip spots
 src/story.js         Toad's belly and appetite stages, big meals, who says what
@@ -130,15 +171,23 @@ src/gates.js         hair hedges: page edges and the zone gates (evaporate when 
 src/ink.js           everything drawn at runtime: skin tiles, pimples, stick, shadow, hair, drip, eyeball
 src/player.js        movement, zone bounds, collisions, waddle and slap lunge
 src/controls.js      keyboard, D-pad and verb buttons
-src/pus.js           pus globs, pus points (saved), pimple regrowth
+src/pus.js           pus globs, golden pimples, mystery curios, stains, pimple regrowth
+src/progress.js      everything saved: pus, stats, pages, curios, shop, achievements, daily gift
+src/album.js         Self-Portrait Album pages and what each character wants
+src/album-notes.js   the artist's note for each page
+src/shop.js          Mirror's shop items, prices and their effects
+src/splash.js        stepping in puddles: splash sound, ring, droplets
 src/scraps.js        Toad food: crumbs, hairs, flies (buzz, swat), pockets, respawn
 src/music.js         background music: menu + gameplay loop, "tap to enter" if autoplay is blocked, mute
 src/sfx.js           procedural sound: slap, splash, gulp, burp, bubble pop, squish, bloop
-src/ui/hud.js        objective, can meter, verb prompt, speech bubbles, bursts, end card
+src/ui/hud.js        objective, can meter, verb prompt, speech bubbles, bursts, banners, floating numbers, end card
+src/ui/menus.js      pause menu, album, achievements, curios, shop, share card
 public/              index.html, style.css, audio/theme.mp3 (background music)
 assets/              scans and processed sprites (see assets/README.md)
 tools/cutout.mjs     paper keying, splitting, sprite export
 tools/trace.mjs      rebuild as vector art: traced lines, fixed flesh palette, cel shade, outline
+tools/animate.mjs    idle strips: swaying hair, stretching drips
+tools/album.mjs      web-sized scans for the album
 build.mjs            esbuild build and dev server; cache-busting hashes
 .github/workflows/pages.yml   lint, build, deploy to GitHub Pages
 ```

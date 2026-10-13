@@ -10,6 +10,7 @@ import { createInteractions } from "./interact.js";
 import { createPus } from "./pus.js";
 import { createScraps } from "./scraps.js";
 import { createLife } from "./life.js";
+import { createSplash } from "./splash.js";
 import { CYCLE_SECONDS, START_PHASE } from "./daynight.js";
 import { AREA } from "./config.js";
 import { createProgress } from "./progress.js";
@@ -45,8 +46,15 @@ music.autoplay().then((state) => {
   window.addEventListener("keydown", enter);
 });
 
-function loadImages() {
-  const entries = SPRITES.map((s) => [s, `assets/sprites/${s}.webp`]);
+// Sprites, plus idle-animation strips (swaying hair, dripping faces) for
+// the ones tools/animate.mjs made strips for.
+async function loadImages() {
+  let anim = {};
+  try { anim = await (await fetch("assets/sprites/anim.json")).json(); } catch {}
+  const entries = [
+    ...SPRITES.map((s) => [s, `assets/sprites/${s}.webp`]),
+    ...SPRITES.filter((s) => anim[s]).map((s) => [`${s}:anim`, `assets/sprites/${s}-anim.webp`]),
+  ];
   let done = 0;
   return Promise.all(entries.map(async ([key, url]) => {
     const img = new Image();
@@ -54,7 +62,11 @@ function loadImages() {
     await img.decode();
     pressStart.textContent = `LOADING ${++done}/${entries.length}`;
     return [key, img];
-  })).then(Object.fromEntries);
+  })).then((pairs) => {
+    const img = Object.fromEntries(pairs);
+    img.anim = Object.fromEntries(SPRITES.filter((s) => anim[s] && img[`${s}:anim`]).map((s) => [s, { img: img[`${s}:anim`], n: anim[s] }]));
+    return img;
+  });
 }
 
 async function boot() {
@@ -100,6 +112,7 @@ async function boot() {
     world, player, hud, story, pus, scraps, album, progress, upgrades: ups, stage, isNight, openShop: menus.openShop,
   });
   const life = createLife({ world, player, hud, story, scraps, isNight });
+  const splash = createSplash({ world, player });
   applyShop();
 
   progress.on((type, a) => {
@@ -173,6 +186,7 @@ async function boot() {
       updatePlayer(player, input, dt, world.people.filter((p) => p.visible), world.gates);
       verbs.update(input, dt);
       pus.update(dt);
+      splash.update(dt, input.moving);
       scraps.update(dt, t);
       story.update(dt, player);
       album.update();

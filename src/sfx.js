@@ -223,6 +223,13 @@ export const sfx = {
     const level = { hub: 0, west: 0.16, east: 0.03 };
     for (const [k, g] of Object.entries(ambience)) g.gain.setTargetAtTime(k === name ? level[k] : 0, ctx.currentTime, 1.2);
   },
+  // Foot in a puddle: a short wet slap; pus is thicker and lower.
+  splish(thick = false) {
+    if (!ready()) return;
+    burst(thick ? 900 : 1600, 2.5, 0.16, 0.5, "bandpass");
+    tone("sine", thick ? 300 : 520, thick ? 120 : 220, 0.09, 0.3);
+    for (let i = 0; i < 3; i++) tone("sine", 1100 + Math.random() * 900, 600, 0.04, 0.08, 0.04 + i * 0.05);
+  },
   rustle() {
     if (!ready()) return;
     burst(4000, 0.5, 1.2, 0.25, "highpass");

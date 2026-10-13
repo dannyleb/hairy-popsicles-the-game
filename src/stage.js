@@ -4,6 +4,7 @@
 import { AREA, INK, VIEW } from "./config.js";
 import { FLOOR_SKIN, WALL_SKIN, drawCosmetic, hedgeTexture, pimpleTexture, rng, shadowTexture, skinTile, stickTexture } from "./ink.js";
 import { environment } from "./daynight.js";
+import { drawSplashes } from "./splash.js";
 import { gateAlpha, gateScale } from "./gates.js";
 
 const SHADOW = shadowTexture();
@@ -128,6 +129,17 @@ export function createStage(canvas) {
     ctx.globalAlpha = 1;
   }
 
+  // The drawing itself: a frame of its idle-animation strip if it has one.
+  let clock = 0;
+  const ANIM_FPS = 5;
+  function art(e, x, y, w, h) {
+    const a = e.anim;
+    if (!a || e.img !== e.baseImg) return ctx.drawImage(e.img, x, y, w, h);
+    const fw = a.img.width / a.n;
+    const f = Math.floor(clock * ANIM_FPS + (e.phase || 0) * 3) % a.n;
+    ctx.drawImage(a.img, f * fw, 0, fw, a.img.height, x, y, w, h);
+  }
+
   function drawEntity(e) {
     if (!e.visible || !onScreen(e.x, e.w)) return;
     if (e.shadow) drawShadow(e);
@@ -144,10 +156,10 @@ export function createStage(canvas) {
       ctx.translate(0, -(e.stickH + e.h * 0.25) * U);
       ctx.rotate(e.headTilt || 0);
       ctx.translate(0, -(e.headBob || 0) * U);
-      ctx.drawImage(e.img, -e.w / 2 * U, -e.h * 0.75 * U, e.w * U, e.h * U);
+      art(e, -e.w / 2 * U, -e.h * 0.75 * U, e.w * U, e.h * U);
     } else {
       ctx.rotate(e.headTilt || 0);
-      ctx.drawImage(e.img, -e.w / 2 * U, -e.h * U, e.w * U, e.h * U);
+      art(e, -e.w / 2 * U, -e.h * U, e.w * U, e.h * U);
       if (e.cosmetics) for (const c of e.cosmetics) drawCosmetic(ctx, c, -e.w / 2 * U, -e.h * U, e.w * U, e.h * U);
     }
     ctx.restore();
@@ -197,6 +209,7 @@ export function createStage(canvas) {
   }
 
   function draw(world, player, carried, time = 0) {
+    clock = time;
     // Screen x for a layer scrolling at `k` times the ground's speed.
     const PX = (x, k) => (x - cam.x * k) * U + W / 2;
     const tileScale = TILE_UNITS * U / floorTile.width;
@@ -363,6 +376,8 @@ export function createStage(canvas) {
     for (const e of world.globs) list.push([e.g + 0.001, () => drawEntity(e)]);
     list.sort((a, b) => a[0] - b[0]);
     for (const [, fn] of list) fn();
+
+    drawSplashes(ctx, world, X, Y, U);
 
     // Foreground hair, closest to the camera: sweeps past faster than you,
     // only along the bottom edge of the screen.

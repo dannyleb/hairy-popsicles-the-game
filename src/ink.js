@@ -679,3 +679,20 @@ export function drawCosmetic(ctx, id, x, y, w, h) {
   }
   ctx.restore();
 }
+
+// A little puddle where a tear or bead of sweat landed.
+export function puddleTexture(seed) {
+  const rand = rng(seed);
+  const [c, ctx] = canvas(160, 64);
+  blob(ctx, 80, 32, 70, 22, rand, 11, 0.25);
+  ctx.fillStyle = "rgba(119, 184, 234, 0.8)";
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = "rgba(46, 22, 22, 0.55)";
+  ctx.stroke();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+  ctx.beginPath();
+  ctx.ellipse(58, 24, 16, 5, -0.15, 0, Math.PI * 2);
+  ctx.fill();
+  return c;
+}

@@ -12,7 +12,7 @@ export function makeEntity(img, height, x, g, props = {}) {
   const w = height * (img.width / img.height);
   const stickH = props.stick ? height * 0.75 : 0;
   return {
-    img, w, h: height, x, g, lift: 0, stickH, top: stickH + height,
+    img, baseImg: img, w, h: height, x, g, lift: 0, stickH, top: stickH + height,
     rot: 0, sway: 0, phase: 0, scale: 1, scaleY: 1, squash: 0, squashT: 0,
     radius: Math.max(0.5, Math.min(w, 2.5) * 0.35),
     shadow: true, visible: true,
@@ -25,6 +25,7 @@ export const floorDist = (a, b) => Math.hypot(a.x - b.x, (a.g - b.g) * DEPTH);
 
 function cast(img) {
   return ROSTER.map((c, i) => makeEntity(img[c.sprite], c.height, c.at[0], c.at[1], {
+    anim: img.anim && img.anim[c.sprite],
     ...c,
     kind: "person",
     ...(c.radius ? { radius: c.radius } : {}),

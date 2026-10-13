@@ -1,14 +1,14 @@
 {
   "name": "hairy-popsicles-the-game",
   "version": "0.1.0",
-  "description": "Hairy Popsicles \u2014 a lightweight browser-based 3D free-roam game.",
+  "description": "Hairy Popsicles: a hand-drawn, flat 2D, gross little browser game.",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
     "dev": "node build.mjs --serve",
     "lint": "eslint .",
-    "sprites": "node tools/cutout.mjs",
+    "sprites": "node tools/cutout.mjs && node tools/animate.mjs",
     "album": "node tools/album.mjs"
   },
   "devDependencies": {

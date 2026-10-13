@@ -290,18 +290,18 @@ html.touch #toast { top: auto; bottom: 110px; font-size: 16px; max-width: 86vw; 
   -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill; pointer-events: none;
 }
 #banner {
-  position: absolute; left: 50%; top: 0; z-index: 9; transform: translate(-50%, -120%);
+  position: absolute; left: 50%; top: 132px; z-index: 9; transform: translate(-50%, -40px) scale(0.9); opacity: 0;
   display: flex; flex-direction: column; align-items: center; min-width: 220px; padding: 8px 22px 10px;
-  background: #f5e3a1; border: 2.5px solid var(--ink); border-top: 0; border-radius: 0 0 16px 16px;
-  box-shadow: 3px 4px 0 rgba(46, 22, 22, 0.85); transition: transform 0.35s cubic-bezier(.2, 1.4, .4, 1);
+  background: #f5e3a1; border: 2.5px solid var(--ink); border-radius: 16px;
+  box-shadow: 3px 4px 0 rgba(46, 22, 22, 0.85); transition: transform 0.35s cubic-bezier(.2, 1.4, .4, 1), opacity 0.25s;
   pointer-events: none;
 }
-#banner.show { transform: translate(-50%, 0); }
+#banner.show { transform: translate(-50%, 0) scale(1); opacity: 1; }
 .bKick { font-size: 11px; letter-spacing: 0.14em; opacity: 0.7; }
 .bTitle { font-family: "Rubik Wet Paint", "Patrick Hand", cursive; font-size: 24px; line-height: 1.1; text-align: center; }
 .bSub { font-size: 14px; }
-html.touch #banner { top: 104px; border-top: 2.5px solid var(--ink); border-radius: 16px; transform: translate(-50%, -260%); min-width: 0; width: 82vw; }
-html.touch #banner.show { transform: translate(-50%, 0); }
+html.touch #banner { top: 104px; min-width: 0; width: 82vw; }
+html.touch #banner.show { transform: translate(-50%, 0) scale(1); opacity: 1; }
 
 /* ---------- Pause button ---------- */
 #pauseBtn {
