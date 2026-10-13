@@ -6,7 +6,10 @@ export const INK = "#2e1616";
 // tall). x runs left-right across the page; g is depth on the floor, from
 // the horizon line (0) to the front edge (AREA.front). Further back = drawn
 // higher and behind; nothing scales with depth.
-export const VIEW = { height: 15, minWidth: 11 };
+// height: world units shown top to bottom (at most); minWidth: across. On a
+// portrait phone the screen is narrow, so it shows a little less across
+// (portraitWidth) to keep everything big enough to read and tap.
+export const VIEW = { height: 15, minWidth: 11, portraitWidth: 8.5 };
 
 // The hub is open from the start; hair hedges at x = ±gateX wall off the
 // west and east zones until Toad has eaten enough. back/front: how far you

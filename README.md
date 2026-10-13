@@ -100,6 +100,12 @@ Toad sits in his corner of the page, starving. Three verbs:
 Walk with WASD / arrows (Shift to run), or click where to go. Esc / P or
 the menu button (top right) pauses.
 
+**Phone framing.** In portrait the view is a little narrower
+(`VIEW.portraitWidth`), so everything is bigger, and the camera sits the
+floor right above the one-row bottom controls (SLAP and WATER side by side,
+the action chip on the left), giving any spare height to the sky behind the
+top HUD.
+
 **On phones** (detected automatically, `html.touch`) the UI switches to
 touch steering: press and hold anywhere and the character walks toward
 your thumb (running if it's far), following it as you drag; let go and
@@ -114,11 +120,14 @@ more pocket room but are worth more to Toad:
 
 | Scrap | How common (per zone) | Pocket slots | Worth to Toad |
 |---|---|---|---|
-| Crumb | 10 | 1 | 1 |
-| Pubic hair | 7 | 1 | 1 |
+| Crumb | 6 | 1 | 1 |
+| Pubic hair | 4 | 1 | 1 |
 | Fly (swat it first) | 3 | 1 | 3 |
-| Toenail clipping | 3 | 2 | 4 |
+| Toenail clipping | 2 | 2 | 4 |
 | Mouse droppings | 1 (slow to come back) | 3 | 8 |
+
+Eaten scraps come back in 14-28 s (toenails 1.5x, droppings 2.5x longer),
+so there's less on the floor at once but about as much food over time.
 
 Pockets hold 12 slots (more with upgrades); the POCKETS bar under Toad's
 belly fills up and turns red and pulses when you're full. `PER_ZONE` in

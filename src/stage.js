@@ -102,7 +102,8 @@ export function createStage(canvas) {
       x.setTransform(dpr, 0, 0, dpr, 0, 0);
       x.imageSmoothingQuality = "high";
     }
-    U = Math.min(H / VIEW.height, W / VIEW.minWidth);
+    const portrait = H > W * 1.2;
+    U = Math.min(H / VIEW.height, W / (portrait ? VIEW.portraitWidth : VIEW.minWidth));
     floorPat = wctx.createPattern(floorTile, "repeat");
     wallPat = screen.createPattern(wallTile, "repeat");
   }
@@ -110,13 +111,20 @@ export function createStage(canvas) {
   const X = (x) => (x - cam.x) * U + W / 2;
   const Y = (g) => (g - cam.g) * U + H / 2;
 
+  // Screen pixels along the bottom covered by on-screen controls (touch);
+  // the floor's front edge is framed above them.
+  let insetBottom = 0;
+  const setInsets = ({ bottom = 0 } = {}) => { insetBottom = bottom; };
+
   function follow(target, dt) {
     const viewW = W / U, viewH = H / U;
     const tx = Math.max(AREA.minX - 3 + viewW / 2, Math.min(AREA.maxX + 3 - viewW / 2, target.x));
-    const top = -6.5, bottom = AREA.front + 1.2;
+    const top = -6.5, bottom = AREA.front + 1.2 + insetBottom / U;
     let tg = target.g - 2;
     const lo = top + viewH / 2, hi = bottom - viewH / 2;
-    tg = lo > hi ? (lo + hi) / 2 : Math.max(lo, Math.min(hi, tg));
+    // A tall screen shows the whole depth with room to spare: sit the floor
+    // on the bottom (above any controls) and give the spare room to the sky.
+    tg = lo > hi ? hi : Math.max(lo, Math.min(hi, tg));
     const k = dt === Infinity ? 1 : 1 - Math.exp(-5 * dt);
     cam.x += (tx - cam.x) * k;
     cam.g += (tg - cam.g) * k;
@@ -516,7 +524,7 @@ export function createStage(canvas) {
   }
 
   return {
-    resize, follow, snap, draw, shake, applyShake,
+    resize, setInsets, follow, snap, draw, shake, applyShake,
     toScreen: (x, g, lift) => ({ x: X(x), y: Y(g) - lift * U }),
     toWorld: (sx, sy) => ({ x: (sx - W / 2) / U + cam.x, g: (sy - H / 2) / U + cam.g }),
     // Frontmost entity whose drawing covers screen point (sx, sy), with a

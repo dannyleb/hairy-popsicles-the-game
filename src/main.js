@@ -142,8 +142,14 @@ async function boot() {
   // isn't lost) and returns the welcome-back gift.
   const gift = progress.visit();
 
-  window.addEventListener("resize", stage.resize);
-  stage.resize();
+  // On touch, the floor is framed above the bottom row of buttons.
+  const frame = () => {
+    stage.resize();
+    const verbs = document.getElementById("verbs").getBoundingClientRect();
+    stage.setInsets({ bottom: verbs.height ? window.innerHeight - verbs.top + 6 : 0 });
+  };
+  window.addEventListener("resize", frame);
+  frame();
   initControls();
 
   // Touch/click the stage. Press and hold: the character follows your

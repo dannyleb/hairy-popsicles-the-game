@@ -14,8 +14,10 @@ const ZONES = [
   { name: "west", x0: AREA.minX, x1: -17 },
   { name: "east", x0: 17, x1: AREA.maxX },
 ];
-const PER_ZONE = { crumb: 10, pube: 7, fly: 3, toenail: 3, dropping: 1 };
-const RESPAWN = [35, 70];
+// Fewer lying around at once, but they come back quicker: about the same
+// food over time, less clutter on the floor.
+const PER_ZONE = { crumb: 6, pube: 4, fly: 3, toenail: 2, dropping: 1 };
+const RESPAWN = [14, 28];
 const RESPAWN_SLOW = { toenail: 1.5, dropping: 2.5 }; // rare things come back slower
 const FOUND = { toenail: "toenail!", dropping: "mouse droppings!!" };
 const STAT = { pube: "hairs", crumb: "crumbs", fly: "fliesPocketed", toenail: "toenails", dropping: "droppings" };
