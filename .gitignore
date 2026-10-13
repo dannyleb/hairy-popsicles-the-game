@@ -3,3 +3,7 @@ dist/
 hairy-popsicles-web.zip
 *.log
 .DS_Store
+
+# Trailer renders (too big for the repo)
+docs/itch/*.mp4
+docs/itch/*.gif

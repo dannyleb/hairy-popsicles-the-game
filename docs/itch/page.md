@@ -45,6 +45,12 @@ Images are in this folder: `cover.jpg` (630x500 at 2x) and `shot-*.jpg`.
 - Screenshots, in this order: `shot-1-day.jpg`, `shot-2-wart.jpg`,
   `shot-3-night.jpg`, `shot-4-album.jpg`, `shot-5-phone.jpg`
 
+### Trailer
+- itch doesn't host video: upload `trailer.mp4` to YouTube (or Vimeo) and
+  paste the link into **Gameplay video or trailer**.
+- `trailer-pop.gif` (2 MB loop) can go first in the screenshots.
+- Neither file is in the repo (too big); they're rendered locally.
+
 ---
 
 ## 2. Description (paste into the Description box)
