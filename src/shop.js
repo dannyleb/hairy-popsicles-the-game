@@ -1,8 +1,14 @@
-// Mirror's shop: spend pus points on upgrades and on things to wear.
-// Upgrades stack up to `max`; cosmetics can be toggled on and off once owned.
+// Mirror's shop (in the menu): spend pus points on upgrades and on things to
+// wear. Upgrades stack up to `max`; cosmetics can be toggled on and off once
+// owned.
+import { CAN_SIZE, POCKETS } from "./config.js";
+
+const POCKETS_UP = 6; // slots per Deeper Pockets level
+const CAN_UP = 3;     // drops per Bigger Can level
+
 export const ITEMS = [
-  { id: "pockets", name: "Deeper Pockets", text: "Carry 6 more scraps.", price: [40, 120], max: 2 },
-  { id: "can", name: "Bigger Can", text: "Hold 3 more drops.", price: [50], max: 1 },
+  { id: "pockets", name: "Deeper Pockets", text: `${POCKETS_UP} more pocket slots.`, price: [40, 120], max: 2 },
+  { id: "can", name: "Bigger Can", text: `Hold ${CAN_UP} more drops.`, price: [50], max: 1 },
   { id: "magnet", name: "Pus Magnet", text: "Pus flies to you from twice as far.", price: [60], max: 1 },
   { id: "bait", name: "Fly Bait", text: "Flies drift toward you.", price: [80], max: 1 },
   { id: "feet", name: "Squelchy Feet", text: "Walk 20% faster.", price: [90], max: 1 },
@@ -18,8 +24,8 @@ export const maxOf = (item) => (item.cosmetic ? 1 : item.max);
 
 // Gameplay numbers that upgrades change.
 export const upgrades = (progress) => ({
-  pockets: 12 + 6 * progress.owns("pockets"),
-  can: 5 + 3 * progress.owns("can"),
+  pockets: POCKETS + POCKETS_UP * progress.owns("pockets"),
+  can: CAN_SIZE + CAN_UP * progress.owns("can"),
   magnet: progress.owns("magnet") ? 3.8 : 1.9,
   bait: progress.owns("bait") > 0,
   speed: progress.owns("feet") ? 1.2 : 1,

@@ -38,4 +38,5 @@ export const FOOD = { crumb: 1, pube: 1, fly: 3, toenail: 4, dropping: 8, blob: 
 // Pocket slots each scrap takes. Rarer finds are bigger but worth more.
 export const SLOTS = { crumb: 1, pube: 1, fly: 1, toenail: 2, dropping: 3 };
 
+// Base pocket slots and watering-can drops (shop upgrades add to these).
 export const POCKETS = 12;
