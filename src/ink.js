@@ -584,6 +584,97 @@ export function flyTexture(wingsUp, dead = false) {
 
 // ---------- rewards ----------
 
+// A giant wart: a fat, lumpy dome studded with round bumps, a few coarse
+// black hairs sprouting from the top. cracked: the beaten-up look after a
+// few slaps (red splits and a bead of pus).
+export function wartTexture(seed, cracked = false) {
+  const rand = rng(seed);
+  const [c, ctx] = canvas(220, 210);
+  const cx = 110, cy = 120, base = 196;
+  const body = () => {
+    blob(ctx, cx, cy, 92, 80, rng(seed), 11, 0.12);
+  };
+  // Body, cut flat where it meets the skin.
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, 220, base);
+  ctx.clip();
+  body();
+  ctx.fillStyle = "#c98a73";
+  ctx.fill();
+  ctx.save();
+  ctx.clip();
+  ctx.fillStyle = "#aa6b5a"; // shade along the lower right
+  ctx.beginPath();
+  ctx.ellipse(cx + 38, cy + 52, 92, 60, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+  // Lots of small, tight lumps (the cauliflower texture).
+  for (let i = 0; i < 46; i++) {
+    const a = rand() * Math.PI * 2, d = Math.sqrt(rand()) * 84;
+    const x = cx + Math.cos(a) * d, y = cy - 4 + Math.sin(a) * d * 0.85, r = 7 + rand() * 6;
+    ctx.beginPath();
+    ctx.ellipse(x, y, r, r * 0.85, rand() * 3, 0, Math.PI * 2);
+    ctx.fillStyle = y > cy + 30 ? "#b4745f" : rand() < 0.5 ? "#d39780" : "#c88570";
+    ctx.fill();
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = "rgba(46, 22, 22, 0.5)";
+    ctx.stroke();
+    if (y < cy + 20) {
+      ctx.beginPath();
+      ctx.arc(x - r * 0.3, y - r * 0.3, r * 0.28, 0, Math.PI * 2);
+      ctx.fillStyle = "#eab9a0";
+      ctx.fill();
+    }
+  }
+  if (cracked) {
+    ctx.strokeStyle = "#b8343f";
+    ctx.lineWidth = 6;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    for (const [x0, y0] of [[78, 70], [138, 82], [104, 128]]) {
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x0 + 12, y0 + 16); ctx.lineTo(x0 + 2, y0 + 30); ctx.lineTo(x0 + 16, y0 + 44);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#f5e3a1";
+    ctx.strokeStyle = "#2e1616";
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(122, 100, 11, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  }
+  ctx.restore();
+  ctx.restore();
+  // Ink outline, and the flat base line.
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, 220, base);
+  ctx.clip();
+  body();
+  ctx.lineWidth = 8;
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = INK;
+  ctx.stroke();
+  ctx.restore();
+  // Swollen pink rim where it grows out of the skin (like the pimples').
+  ctx.beginPath();
+  ctx.ellipse(cx, base - 4, 104, 14, 0, 0, Math.PI * 2);
+  ctx.fillStyle = "#e0868a";
+  ctx.fill();
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = INK;
+  ctx.stroke();
+  // Coarse black hairs.
+  ctx.lineCap = "round";
+  ctx.lineWidth = 5;
+  for (const [x, y, dx, dy] of [[86, 52, -18, -38], [118, 44, 6, -44], [146, 58, 26, -30]]) {
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.bezierCurveTo(x + dx * 0.6, y + dy * 0.3, x - dx * 0.2, y + dy * 0.7, x + dx, y + dy);
+    ctx.stroke();
+  }
+  return c;
+}
+
 // The rare golden whitehead: same swollen shape, gold dome, glinting head.
 export function goldenPimpleTexture(seed) {
   const c = pimpleTexture(seed);

@@ -145,8 +145,15 @@ Walking on the skin squelches.
 x5 at 8, with rising pitch and screen shake.
 
 **Surprises.** 1 in 40 pimples is golden (a jackpot of pus); 1 in 22 pops
-leaves a mystery glob holding a curio (toenail, tooth, ...) for your
+leaves a mystery glob holding a curio (kidney stone, tooth, ...) for your
 collection. Red Eye only comes out at night.
+
+**Giant warts** (`src/warts.js`): extremely rare, one at a time. The first
+grows a couple of minutes in, the next 4-7 minutes after you burst one,
+somewhere in open ground away from you; it twinkles. It takes 8 slaps
+(SLAP, E, or tap it; it cracks halfway). Bursting it sprays 30 globs worth
+3 each, drops a guaranteed curio, turns the 3 nearest pimples golden, and
+unlocks "Warts and All".
 
 **Tips** (`src/tips.js`): a gentle tutorial. One short tip at a time,
 shown the first time it's useful and never again (saved): pocket things,
@@ -179,7 +186,7 @@ the menu. Spend pus on: bigger pockets, bigger
 can, glob magnet, fly bait, faster feet, and cosmetics drawn on you
 (wart, unibrow, stain, tuft, drool). `ITEMS` in `src/shop.js`.
 
-**Achievements** (18, gross names) in `ACHIEVEMENTS` in `src/progress.js`.
+**Achievements** (19, gross names) in `ACHIEVEMENTS` in `src/progress.js`.
 
 **Daily.** Toad craves one food each day (counts double). Coming back
 gives a gift of pus: 12 on your second day, 2 more each day after, up to

@@ -28,6 +28,13 @@ export function createPus({ world, player, hud, progress, upgrades, stage }) {
     p.golden = Math.random() < GOLDEN_ODDS;
     if (p.golden) { p.plainImg = p.img; p.img = goldenImg; }
   }
+  function makeGolden(p) {
+    if (p.golden) return;
+    p.golden = true;
+    p.plainImg = p.img;
+    p.img = goldenImg;
+    squash(p, 1.4);
+  }
   for (const p of world.pimples) maybeGolden(p);
 
   function spawn(pimple, img, value, extra = {}) {
@@ -42,6 +49,11 @@ export function createPus({ world, player, hud, progress, upgrades, stage }) {
     world.globs.push(g);
   }
 
+  function addStain(x, g, size) {
+    world.stains.push({ img: stainImgs[Math.floor(Math.random() * 4)], x, g: g + 0.05, size, t: 0, life: STAIN_LIFE, kind: "pus" });
+    if (world.stains.length > MAX_STAINS) world.stains.shift();
+  }
+
   function burst(pimple, mult = 1) {
     if (pimple.golden) {
       for (let i = 0; i < 24; i++) spawn(pimple, globImgs[i % 4], 2 * mult);
@@ -54,8 +66,7 @@ export function createPus({ world, player, hud, progress, upgrades, stage }) {
       for (let i = 0; i < n; i++) spawn(pimple, globImgs[i % 4], mult);
     }
     if (Math.random() < MYSTERY_ODDS) spawn(pimple, mysteryImg, 1, { curio: true });
-    world.stains.push({ img: stainImgs[Math.floor(Math.random() * 4)], x: pimple.x, g: pimple.g + 0.05, size: 0.9 + pimple.h * 0.8, t: 0, life: STAIN_LIFE, kind: "pus" });
-    if (world.stains.length > MAX_STAINS) world.stains.shift();
+    addStain(pimple.x, pimple.g, 0.9 + pimple.h * 0.8);
     pimple.regrow = REGROW[0] + Math.random() * (REGROW[1] - REGROW[0]);
   }
 
@@ -127,7 +138,27 @@ export function createPus({ world, player, hud, progress, upgrades, stage }) {
     }
   }
 
-  return { burst, update };
+  return {
+    burst,
+    update,
+    // For the giant wart (warts.js): a big spray of globs worth `value`
+    // each from `at` ({x, g, h}), a guaranteed curio, a wide stain, and the
+    // n unpopped pimples nearest to it turned golden.
+    gush(at, n, value) {
+      const from = { ...at, golden: true };
+      for (let i = 0; i < n; i++) spawn(from, globImgs[i % 4], value);
+      spawn(from, mysteryImg, 1, { curio: true });
+      addStain(at.x, at.g, 2.6);
+    },
+    goldenNear(x, g, n) {
+      const near = world.pimples
+        .filter((p) => p.kind === "pimple" && !p.golden)
+        .sort((a, b) => Math.hypot(a.x - x, a.g - g) - Math.hypot(b.x - x, b.g - g))
+        .slice(0, n);
+      for (const p of near) makeGolden(p);
+      return near;
+    },
+  };
 }
 
 function unpop(p) {

@@ -179,8 +179,9 @@ export function createStage(canvas) {
     if (GLINT.has(e.kind)) glint(e);
   }
 
-  // Rare finds (toenails, mouse droppings) twinkle so they catch your eye.
-  const GLINT = new Set(["toenail", "dropping"]);
+  // Rare finds (toenails, mouse droppings, giant warts) twinkle so they
+  // catch your eye.
+  const GLINT = new Set(["toenail", "dropping", "wart"]);
   function glint(e) {
     const k = Math.max(0, Math.sin(clock * 3.2 + e.x * 1.7));
     if (k < 0.05) return;
@@ -408,6 +409,7 @@ export function createStage(canvas) {
     for (const e of world.items) if (e !== carried) queueEntity(e, 0);
     queueAll(world.drips, 0);
     queueAll(world.pimples, 0);
+    queueAll(world.warts, 0);
     queueEntity(player, 0);
     if (carried) enqueue(player.g + 0.001, ENTITY, carried);
     queueAll(world.fx, 0.002);

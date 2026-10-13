@@ -13,6 +13,7 @@ export const ACHIEVEMENTS = [
   { id: "pop100", name: "Pop Culture", text: "Pop 100 pimples.", stat: "pops", goal: 100 },
   { id: "combo10", name: "Picking Season", text: "Pop 10 pimples in one combo.", stat: "maxCombo", goal: 10 },
   { id: "golden", name: "Golden Child", text: "Pop a golden whitehead.", stat: "golden", goal: 1 },
+  { id: "warts", name: "Warts and All", text: "Burst a giant wart. Takes a few slaps.", stat: "warts", goal: 1 },
   { id: "flies50", name: "Lord of the Flies", text: "Swat 50 flies.", stat: "flies", goal: 50 },
   { id: "hairs100", name: "Hair Apparent", text: "Pocket 100 hairs.", stat: "hairs", goal: 100 },
   { id: "crumbs100", name: "Crumb Bum", text: "Pocket 100 crumbs.", stat: "crumbs", goal: 100 },

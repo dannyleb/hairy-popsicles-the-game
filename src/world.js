@@ -103,6 +103,7 @@ export function buildWorld(img) {
     // Filled in by the systems that own them (scraps.js, pus.js, splash.js,
     // interact.js, main.js); declared here so the shape is in one place.
     scraps: [],
+    warts: [],
     globs: [],
     stains: [],
     splashes: [],
@@ -137,7 +138,8 @@ export function animateWorld(world, t, dt) {
   }
   for (const it of world.items) wobble(it);
   for (const p of world.pimples) wobble(p);
-  for (const g of world.globs || []) wobble(g);
+  for (const w of world.warts) wobble(w);
+  for (const g of world.globs) wobble(g);
   for (const d of world.drips) {
     wobble(d);
     if (d.falling) continue;

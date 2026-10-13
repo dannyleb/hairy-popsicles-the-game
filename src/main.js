@@ -11,6 +11,7 @@ import { createPus } from "./pus.js";
 import { createScraps } from "./scraps.js";
 import { createLife } from "./life.js";
 import { createSplash } from "./splash.js";
+import { createWarts } from "./warts.js";
 import { createTips } from "./tips.js";
 import { startOver } from "./ui/confirm.js";
 import { PAGES, createAlbum } from "./album.js";
@@ -106,6 +107,7 @@ async function boot() {
   });
   const pus = createPus({ world, player, hud, progress, upgrades: ups, stage });
   const scraps = createScraps({ world, player, hud, progress, upgrades: ups });
+  const warts = createWarts({ world, player, hud, progress, pus, stage });
 
   let running = false, paused = false;
   const applyShop = () => {
@@ -114,13 +116,13 @@ async function boot() {
     player.speedMul = u.speed;
     hud.setPockets(scraps.used(), u.pockets);
   };
-  const tips = createTips({ progress, hud, story, scraps, upgrades: ups, isNight, guide: (to) => menus.setGuide(to) });
+  const tips = createTips({ progress, hud, story, scraps, upgrades: ups, isNight, world, player, guide: (to) => menus.setGuide(to) });
   const menus = createMenus({
     progress, hud, img, onShopChange: applyShop, onView: tips.onView,
     setPaused: (v) => { paused = v; if (v) { press = null; verbs.stop(); } },
   });
   const verbs = createInteractions({
-    world, player, hud, story, pus, scraps, album, progress, upgrades: ups, stage, isNight,
+    world, player, hud, story, pus, scraps, warts, album, progress, upgrades: ups, stage, isNight,
     onTalk: tips.onTalk,
   });
   const life = createLife({ world, player, hud, story, scraps, isNight });
@@ -166,6 +168,7 @@ async function boot() {
     try { canvas.setPointerCapture(e.pointerId); } catch {}
     const small = [
       ...world.pimples.filter((p) => p.kind === "pimple"),
+      ...world.warts,
       ...world.scraps.filter((s) => !s.gone),
       ...world.items.filter((i) => !i.carried && !i.eaten),
     ];
@@ -197,7 +200,7 @@ async function boot() {
   });
 
   if (new URLSearchParams(location.search).has("debug")) {
-    window.game = { player, world, story, pus, stage, scraps, progress, album, menus, verbs, tips };
+    window.game = { player, world, story, pus, stage, scraps, progress, album, menus, verbs, tips, warts };
   }
 
   let last = performance.now();
@@ -215,6 +218,7 @@ async function boot() {
       updatePlayer(player, input, dt, world.people, world.gates);
       verbs.update(input, dt);
       pus.update(dt);
+      warts.update(dt);
       splash.update(dt, input.moving);
       scraps.update(dt, t);
       story.update(dt, player);

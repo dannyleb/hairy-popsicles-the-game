@@ -13,7 +13,7 @@ const GAP = 14;       // seconds between tips
 const SHOW = 11;      // seconds a tip stays up (unless it's done sooner)
 const FULL_FOR = 4;   // seconds of full pockets before the pockets tip
 
-export function createTips({ progress, hud, story, scraps, upgrades, isNight, guide = () => {} }) {
+export function createTips({ progress, hud, story, scraps, upgrades, isNight, world, player, guide = () => {} }) {
   const touch = () => document.documentElement.classList.contains("touch");
   const viewed = new Set();   // menu screens looked at this visit
   const told = new Set();     // whose wants you've been told this visit
@@ -94,6 +94,12 @@ export function createTips({ progress, hud, story, scraps, upgrades, isNight, gu
       when: () => talkedToWanter,
       done: () => false,
       text: () => "Everyone wants something. Do it and you earn their card for your album.",
+    },
+    {
+      id: "wart",
+      when: () => world.warts.some((w) => Math.abs(w.x - player.x) < 8),
+      done: () => !world.warts.length,
+      text: () => "A giant wart! Slap it. Keep slapping. Something good is in there.",
     },
     {
       id: "sleep",

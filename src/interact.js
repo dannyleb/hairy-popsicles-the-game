@@ -12,7 +12,7 @@ import { sfx } from "./sfx.js";
 
 const SPRAY = dripTexture();
 
-export function createInteractions({ world, player, hud, story, pus, scraps, album, progress, upgrades, stage, isNight, onTalk = () => {} }) {
+export function createInteractions({ world, player, hud, story, pus, scraps, warts, album, progress, upgrades, stage, isNight, onTalk = () => {} }) {
   let carrying = null;
   let can = 0;
   let combo = 0, comboT = 0;
@@ -113,13 +113,18 @@ export function createInteractions({ world, player, hud, story, pus, scraps, alb
     let target = nearest([...world.people, ...world.items]);
     const f = scraps.swatTarget(REACH);
     if (f && (!target || gap(f) < gap(target) - 0.3)) target = f;
-    const zit = nearestZit();
+    // A giant wart is rare and the point of being there: it beats pimples
+    // and flies, and wins over people unless someone's clearly closer.
+    const wart = warts.near(REACH);
+    if (wart && (!target || target.kind === "fly" || gap(wart) < gap(target) + 0.6)) target = wart;
+    const zit = target === wart && wart ? null : nearestZit();
     if (zit && (!target || gap(zit) < gap(target) - 0.6)) target = zit;
     if (!target) return;
     if (target.kind === "pimple") {
       pop(target);
       return;
     }
+    if (target.kind === "wart") return slapWart(target);
     if (target.kind === "fly") {
       swat(target);
       return;
@@ -129,6 +134,12 @@ export function createInteractions({ world, player, hud, story, pus, scraps, alb
     hud.burst("SLAP!", target);
     say(target, story.slap(target));
     album.onSlap(target);
+  }
+
+  function slapWart(w) {
+    player.lunge = PLAYER.lunge;
+    hud.burst("THWACK!", w);
+    warts.hit(w);
   }
 
   function water() {
@@ -224,6 +235,13 @@ export function createInteractions({ world, player, hud, story, pus, scraps, alb
       return;
     }
 
+    // E next to a giant wart slaps it.
+    const wart = warts.near(REACH);
+    if (wart) {
+      slapWart(wart);
+      return;
+    }
+
     const person = nearestPerson();
     if (person) {
       talkTo(person);
@@ -278,6 +296,7 @@ export function createInteractions({ world, player, hud, story, pus, scraps, alb
   function act(w) {
     const e = w.target;
     if (w.act === "pop") { if (e.kind === "pimple") { player.lunge = PLAYER.lunge; pop(e); } return; }
+    if (w.act === "wart") { if (world.warts.includes(e)) slapWart(e); return; }
     if (w.act === "swat") { if (!e.dead && !e.gone) swat(e); return; }
     if (w.act === "grab") { grab(); return; }
     if (w.act === "talk") {
@@ -293,6 +312,7 @@ export function createInteractions({ world, player, hud, story, pus, scraps, alb
     if (!e) return goTo(x, g);
     const [sx, sg] = standFor(e);
     if (e.kind === "pimple") return goTo(sx, sg, e, "pop");
+    if (e.kind === "wart") return goTo(sx, sg, e, "wart");
     if (e.kind === "fly" && !e.dead) return goTo(sx, sg, e, "swat");
     if (world.items.includes(e)) return goTo(sx, sg, e, "grab");
     if (e === story.toad || world.people.includes(e)) return goTo(sx, sg, e, "talk");
@@ -325,7 +345,8 @@ export function createInteractions({ world, player, hud, story, pus, scraps, alb
     const w = walkTo, e = w.target;
     let reach = 0.3;
     if (e) {
-      if ((w.act === "pop" && e.kind !== "pimple") || e.gone || e.visible === false || (w.act === "swat" && e.dead)) { walkTo = null; return input; }
+      const gone = e.gone || e.visible === false || (w.act === "pop" && e.kind !== "pimple") || (w.act === "swat" && e.dead) || (w.act === "wart" && !world.warts.includes(e));
+      if (gone) { walkTo = null; return input; }
       [w.x, w.g, reach] = standFor(e);
     }
     const dx = w.x - player.x, dg = w.g - player.g;
@@ -387,6 +408,7 @@ export function createInteractions({ world, player, hud, story, pus, scraps, alb
     const zit = nearestZit();
     if (canFeed()) return zitFirst(zit) ? "POP" : `FEED TOAD (${scraps.used()})`;
     if (nearest(world.items)) return "GRAB";
+    if (warts.near(REACH)) return "SLAP WART";
     const person = nearestPerson();
     if (person) return giftFor(person) ? "GIVE" : "TALK";
     if (scraps.swatTarget(REACH - 0.6)) return "SWAT";
