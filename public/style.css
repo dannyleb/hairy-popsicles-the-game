@@ -125,8 +125,8 @@ html, body {
 .endInner p { font-size: 24px; margin: 4px 0 18px; }
 
 #toast {
-  position: absolute; top: 96px; left: 50%; transform: translate(-50%, -8px) rotate(1deg);
-  padding: 6px 18px; font-size: 20px; z-index: 6;
+  position: absolute; bottom: 78px; left: 50%; transform: translate(-50%, -8px) rotate(1deg);
+  padding: 6px 18px; font-size: 20px; z-index: 6; max-width: min(640px, 90vw); text-align: center;
   opacity: 0; transition: opacity 0.25s, transform 0.25s; pointer-events: none;
 }
 #toast.show { opacity: 1; transform: translate(-50%, 0) rotate(1deg); }
