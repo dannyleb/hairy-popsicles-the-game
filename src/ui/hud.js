@@ -35,11 +35,11 @@ export function createHud(stage) {
       objSub.textContent = sub;
     },
 
-    toast(text) {
+    toast(text, ms = 2600) {
       toastEl.textContent = text;
       toastEl.classList.add("show");
       clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2600);
+      toastTimer = setTimeout(() => toastEl.classList.remove("show"), ms);
     },
 
     setCan(n, max) {
@@ -121,6 +121,23 @@ export function createHud(stage) {
     banner(kicker, title, sub = "") {
       bannerQueue.push([kicker, title, sub]);
       if (bannerQueue.length === 1) nextBanner();
+    },
+
+    // One tutorial tip at a time. menu: point at the menu button.
+    tip(text, menu = false) {
+      const el = $("tip");
+      $("tipTxt").textContent = text;
+      el.classList.toggle("menu", menu);
+      $("pauseBtn").classList.toggle("nudge", menu);
+      el.hidden = false;
+      void el.offsetWidth;
+      el.classList.add("show");
+    },
+    hideTip() {
+      const el = $("tip");
+      el.classList.remove("show");
+      $("pauseBtn").classList.remove("nudge");
+      setTimeout(() => { if (!el.classList.contains("show")) el.hidden = true; }, 300);
     },
 
     showEnd() {

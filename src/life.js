@@ -3,7 +3,7 @@
 //   - heads on sticks bob, tilt toward you when you're near, and shudder
 //   - walkers wander around their spot, waddling and facing where they go
 //   - Toad lumbers around the middle of the page, and shuffles toward you
-//     when you're carrying food
+//     when you're carrying food; when he's full he waddles home and sleeps
 //   - hoppers hop, floaters hover
 //   - criers, sweaters and droolers shed drops that land as teardrops you
 //     can collect for your watering can
@@ -84,7 +84,8 @@ export function createLife({ world, player, hud, story, scraps, isNight = () => 
         Math.max(w.gMin, Math.min(w.gMax, p.home[1] + rand(-w.gRange, w.gRange))),
       ];
       const spot = { x: goal[0], g: goal[1] };
-      if (world.people.every((o) => o === p || !o.visible || floorDist(spot, o) > p.radius + o.radius + 0.6)) return goal;
+      const room = p === toad ? 2 : 0.6;
+      if (world.people.every((o) => o === p || !o.visible || floorDist(spot, o) > p.radius + o.radius + room)) return goal;
     }
     return null;
   }
@@ -174,7 +175,8 @@ export function createLife({ world, player, hud, story, scraps, isNight = () => 
     update(dt, t, input) {
       nightOwl();
       for (const p of world.people) {
-        p.breath = Math.sin(t * (p === toad ? 1.1 : 1.7) + p.phase) * (p === toad ? 0.045 : 0.018);
+        const asleep = p === toad && !story.hungry && !toad.goal;
+        p.breath = Math.sin(t * (asleep ? 0.6 : p === toad ? 1.1 : 1.7) + p.phase) * (asleep ? 0.07 : p === toad ? 0.045 : 0.018);
         const near = floorDist(player, p) < 5.5;
 
         if (p.stickH) {
@@ -191,7 +193,8 @@ export function createLife({ world, player, hud, story, scraps, isNight = () => 
         }
 
         if (p.move === "walk") wander(p, dt);
-        else if (p === toad && !story.done) wander(p, dt, TOAD_WALK);
+        // Hungry Toad lumbers about; full Toad waddles home and sleeps.
+        else if (p === toad && (story.hungry || toad.goal)) wander(p, dt, TOAD_WALK);
         else if (p.move === "float") {
           p.lift = 0.25 + Math.sin(t * 1.4 + p.phase) * 0.2;
           p.rot += Math.sin(t * 0.8 + p.phase) * 0.04;
@@ -213,7 +216,7 @@ export function createLife({ world, player, hud, story, scraps, isNight = () => 
 
       // Toad perks up when you've got food for him.
       const hasFood = scraps.pockets.length > 0;
-      if (hasFood && floorDist(player, toad) < 10 && !story.done) {
+      if (hasFood && floorDist(player, toad) < 10 && story.hungry) {
         // Shuffle over to whoever has the food.
         const [lo, hi] = zoneBounds(toad.home[0]);
         toad.goal = [

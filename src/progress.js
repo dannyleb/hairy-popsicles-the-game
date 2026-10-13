@@ -31,7 +31,7 @@ function today() {
 }
 
 function blank() {
-  return { pus: 0, stats: {}, achievements: {}, pages: {}, wants: {}, curios: {}, owned: {}, equipped: {}, lastVisit: null };
+  return { pus: 0, stats: {}, achievements: {}, pages: {}, wants: {}, curios: {}, owned: {}, equipped: {}, tips: {}, lastVisit: null };
 }
 
 export function createProgress() {
@@ -69,7 +69,7 @@ export function createProgress() {
     stat: (k) => s.stats[k] || 0,
     add(k, n = 1) { s.stats[k] = (s.stats[k] || 0) + n; check(); save(); },
     max(k, v) { if (v > (s.stats[k] || 0)) { s.stats[k] = v; check(); save(); } },
-    addPus(n) { s.pus += n; s.stats.pusTotal = (s.stats.pusTotal || 0) + n; check(); save(); },
+    addPus(n) { s.pus += n; s.stats.pusTotal = (s.stats.pusTotal || 0) + n; check(); save(); emit("pus", s.pus); },
     spendPus(n) { if (s.pus < n) return false; s.pus -= n; save(); return true; },
 
     // Album.
@@ -80,6 +80,7 @@ export function createProgress() {
       s.pages[id] = Date.now();
       s.stats.pages = Object.keys(s.pages).length;
       check(); save();
+      emit("card", id);
       return true;
     },
     wantCount: (id) => s.wants[id] || 0,
@@ -92,7 +93,18 @@ export function createProgress() {
 
     // Curios.
     hasCurio: (id) => !!s.curios[id],
-    addCurio(id) { const fresh = !s.curios[id]; s.curios[id] = (s.curios[id] || 0) + 1; s.stats.curios = Object.keys(s.curios).length; check(); save(); return fresh; },
+    addCurio(id) {
+      const fresh = !s.curios[id];
+      s.curios[id] = (s.curios[id] || 0) + 1;
+      s.stats.curios = Object.keys(s.curios).length;
+      check(); save();
+      if (fresh) emit("curio", id);
+      return fresh;
+    },
+
+    // Tutorial tips: each one is shown once, ever.
+    tipSeen: (id) => !!(s.tips && s.tips[id]),
+    markTip(id) { s.tips = s.tips || {}; s.tips[id] = Date.now(); save(); },
 
     // Shop.
     owns: (id) => s.owned[id] || 0,

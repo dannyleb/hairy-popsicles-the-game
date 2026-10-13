@@ -11,7 +11,7 @@ import { sfx } from "../sfx.js";
 const $ = (id) => document.getElementById(id);
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
-export function createMenus({ progress, hud, img, setPaused, onShopChange }) {
+export function createMenus({ progress, hud, img, setPaused, onShopChange, onView = () => {} }) {
   const menu = $("menu"), body = $("menuBody"), tabs = $("menuTabs"), title = $("menuTitle");
   const curioUrls = Object.fromEntries(CURIOS.map((c) => [c.id, curioTexture(c.id).toDataURL()]));
   let tab = "pages", mode = null;
@@ -21,7 +21,6 @@ export function createMenus({ progress, hud, img, setPaused, onShopChange }) {
     if (t) tab = t;
     menu.hidden = false;
     setPaused(true);
-    $("pauseBtn").classList.remove("new");
     render();
   }
   function close() {
@@ -37,15 +36,41 @@ export function createMenus({ progress, hud, img, setPaused, onShopChange }) {
   });
   $("pauseBtn").addEventListener("click", () => open("pause"));
   $("pageClose").addEventListener("click", () => ($("pageView").hidden = true));
-  progress.on((type) => { if (type === "achievement" && menu.hidden) $("pauseBtn").classList.add("new"); });
-  hud.onAlbumNews = () => { if (menu.hidden) $("pauseBtn").classList.add("new"); };
+
+  // What's new since you last looked: the menu button pulses until you've
+  // seen it, and the rows and tabs that have something new get a dot.
+  // Kinds: pages (new card), achievements, curios, shop (something you can
+  // now afford).
+  const news = new Set();
+  const affordSeen = new Set();
+  const refreshBadge = () => $("pauseBtn").classList.toggle("new", news.size > 0);
+  const flag = (kind) => { news.add(kind); refreshBadge(); };
+  const seen = (kind) => { if (news.delete(kind)) refreshBadge(); };
+  function checkAfford() {
+    for (const it of ITEMS) {
+      const lvl = progress.owns(it.id);
+      if (lvl >= maxOf(it)) continue;
+      const key = `${it.id}:${lvl}`;
+      if (progress.pus >= priceOf(it, lvl) && !affordSeen.has(key)) { affordSeen.add(key); flag("shop"); }
+    }
+  }
+  progress.on((type) => {
+    if (type === "achievement") flag("achievements");
+    else if (type === "card") flag("pages");
+    else if (type === "curio") flag("curios");
+    else if (type === "pus") checkAfford();
+  });
+  checkAfford();
+  const dot = (kind) => (news.has(kind) ? `<i class="newDot" aria-label="new"></i>` : "");
 
   function render() {
     if (mode === "shop") return renderShop();
     if (mode === "pause") return renderPause();
     title.textContent = "Self-Portrait Album";
     const names = { pages: `Cards ${progress.pageCount()}/${PAGES.length}`, achievements: `Achievements ${progress.achievementCount()}/${ACHIEVEMENTS.length}`, curios: `Curios ${CURIOS.filter((c) => progress.hasCurio(c.id)).length}/${CURIOS.length}`, share: "Share" };
-    tabs.innerHTML = Object.entries(names).map(([k, v]) => `<button data-tab="${k}" class="${k === tab ? "on" : ""}">${v}</button>`).join("");
+    seen(tab);
+    onView("album", tab);
+    tabs.innerHTML = Object.entries(names).map(([k, v]) => `<button data-tab="${k}" class="${k === tab ? "on" : ""}">${v}${dot(k)}</button>`).join("");
     for (const b of tabs.querySelectorAll("button")) b.addEventListener("click", () => { tab = b.dataset.tab; render(); });
     ({ pages: renderPages, achievements: renderAchievements, curios: renderCurios, share: renderShare })[tab]();
   }
@@ -198,13 +223,14 @@ export function createMenus({ progress, hud, img, setPaused, onShopChange }) {
 
   // ----- Pause -----
   function renderPause() {
+    onView("pause");
     title.textContent = "Paused";
     tabs.innerHTML = "";
     body.innerHTML = `<div class="pauseList">
       <button class="chunk" data-go="resume">&#9654; Resume</button>
-      <button class="chunk" data-go="album">Self-Portrait Album <small>${progress.pageCount()}/${PAGES.length} cards</small></button>
-      <button class="chunk" data-go="achievements">Achievements <small>${progress.achievementCount()}/${ACHIEVEMENTS.length}</small></button>
-      <button class="chunk" data-go="shop">Mirror's Shop <small>${progress.pus} pus</small></button>
+      <button class="chunk" data-go="album">Self-Portrait Album${dot("pages") || dot("curios")} <small>${progress.pageCount()}/${PAGES.length} cards</small></button>
+      <button class="chunk" data-go="achievements">Achievements${dot("achievements")} <small>${progress.achievementCount()}/${ACHIEVEMENTS.length}</small></button>
+      <button class="chunk" data-go="shop">Mirror's Shop${dot("shop")} <small>${progress.pus} pus</small></button>
       <button class="chunk" data-go="share">Share your Self-Portrait</button>
     </div>`;
     for (const b of body.querySelectorAll("[data-go]")) b.addEventListener("click", () => {
@@ -219,6 +245,8 @@ export function createMenus({ progress, hud, img, setPaused, onShopChange }) {
 
   // ----- Shop -----
   function renderShop() {
+    seen("shop");
+    onView("shop");
     title.textContent = "Mirror's Shop";
     tabs.innerHTML = `<span class="purse"><span class="pusDrop"></span>${progress.pus} pus</span>`;
     body.innerHTML = `<div class="shopList">${ITEMS.map((it) => {

@@ -11,6 +11,7 @@ import { createPus } from "./pus.js";
 import { createScraps } from "./scraps.js";
 import { createLife } from "./life.js";
 import { createSplash } from "./splash.js";
+import { createTips } from "./tips.js";
 import { CYCLE_SECONDS, START_PHASE } from "./daynight.js";
 import { AREA } from "./config.js";
 import { createProgress } from "./progress.js";
@@ -107,9 +108,14 @@ async function boot() {
     player.speedMul = u.speed;
     hud.setPockets(scraps.pockets.length, u.pockets);
   };
-  const menus = createMenus({ progress, hud, img, setPaused: (v) => { paused = v; if (v) { press = null; verbs.stop(); } }, onShopChange: applyShop });
+  const tips = createTips({ progress, hud, story, scraps, upgrades: ups, isNight });
+  const menus = createMenus({
+    progress, hud, img, onShopChange: applyShop, onView: tips.onView,
+    setPaused: (v) => { paused = v; if (v) { press = null; verbs.stop(); } },
+  });
   const verbs = createInteractions({
     world, player, hud, story, pus, scraps, album, progress, upgrades: ups, stage, isNight, openShop: menus.openShop,
+    onTalk: tips.onTalk,
   });
   const life = createLife({ world, player, hud, story, scraps, isNight });
   const splash = createSplash({ world, player });
@@ -175,7 +181,7 @@ async function boot() {
   });
 
   if (new URLSearchParams(location.search).has("debug")) {
-    window.game = { player, world, story, pus, stage, scraps, progress, album, menus, verbs };
+    window.game = { player, world, story, pus, stage, scraps, progress, album, menus, verbs, tips };
   }
 
   let last = performance.now();
@@ -197,6 +203,7 @@ async function boot() {
       scraps.update(dt, t);
       story.update(dt, player);
       album.update();
+      tips.update(dt);
       sfx.buzz(Math.max(0, 1 - scraps.nearestFly() / 7));
       const z = player.x < -AREA.gateX ? "west" : player.x > AREA.gateX ? "east" : "hub";
       if (z !== zone) { zone = z; sfx.zone(z); }

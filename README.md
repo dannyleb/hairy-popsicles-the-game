@@ -114,9 +114,12 @@ zone after a while. Big meals, carried over by hand:
 
 **Opening the page.** Fill Toad's belly (meter in the objective card) and
 he's full: he burps, the next hair wall evaporates, the camera shows you
-the opening, and his appetite comes back bigger. `STAGES` in
-`src/config.js`: 15 opens the west, 22 the east, 30 and he's full for good.
-New zones are a new stage entry plus a gate in `src/gates.js`.
+the opening, and he waddles home to sleep it off (25 s, the belly bar reads
+"zzz"). While he digests he won't eat and your pockets stay full; then his
+appetite comes back bigger. `STAGES` in `src/config.js`: 15 opens the west,
+22 the east, 30 finishes the story. After that he wakes up for seconds
+every so often (50 s naps), worth 25 pus each time. New zones are a new
+stage entry plus a gate in `src/gates.js`.
 
 **Pus points.** Pop a floor pimple by tapping/clicking it (you walk over),
 or by walking up to it and pressing E or Space (bubble-pop sound). Pus
@@ -131,6 +134,16 @@ x5 at 8, with rising pitch and screen shake.
 **Surprises.** 1 in 40 pimples is golden (a jackpot of pus); 1 in 22 pops
 leaves a mystery glob holding a curio (toenail, tooth, ...) for your
 collection. Red Eye only comes out at night.
+
+**Tips** (`src/tips.js`): a gentle tutorial. One short tip at a time,
+shown the first time it's useful and never again (saved): pocket things,
+feed Toad, pop pimples, pockets full (points at Mirror's shop), first card,
+first achievement, enough pus to shop, Toad asleep, nightfall. Talking to
+someone whose card you haven't earned tells you what they want.
+
+**Menu news.** When there's something new (a card, an achievement, a curio,
+or a shop item you can now afford) the menu button pulses with a red dot,
+and the matching menu rows and tabs get a dot until you've looked.
 
 **Title screen** explains how to play and the long game (cards, leveling
 up, achievements), laid out to fit without scrolling from phones to
@@ -170,7 +183,7 @@ All names and dialogue are placeholders. `?debug` in the URL exposes
 src/main.js          image loading, game loop, start screen, pointer (hold/tap) wiring
 src/config.js        stage size, walkable area, player, colors
 src/roster.js        every character: sprite, size, stick, position, lines; drip spots
-src/story.js         Toad's belly and appetite stages, big meals, who says what
+src/story.js         Toad's belly, appetite stages, digesting, seconds, big meals, who says what
 src/interact.js      the verbs: slap, grab/give/talk, water; carrying; spray and feeding arcs
 src/daynight.js      day/night cycle: sky and world tints, stars, sun/moon timing
 src/life.js          idle life: breathing, head bob/tilt, wandering, hops, shed drops, mutters
@@ -186,6 +199,7 @@ src/album.js         Self-Portrait Album cards and what each character wants
 src/album-notes.js   the artist's note for each card
 src/shop.js          Mirror's shop items, prices and their effects
 src/splash.js        stepping in puddles: splash sound, ring, droplets
+src/tips.js          one-time tutorial tips and what-they-want hints
 src/scraps.js        Toad food: crumbs, hairs, flies (buzz, swat), pockets, respawn
 src/music.js         background music: menu + gameplay loop, "tap to enter" if autoplay is blocked, mute
 src/sfx.js           procedural sound: slap, splash, gulp, burp, bubble pop, squish, bloop

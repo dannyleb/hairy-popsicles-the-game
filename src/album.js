@@ -62,7 +62,6 @@ export function createAlbum({ progress, hud, world, player, isNight }) {
     progress.addPus(REWARD);
     hud.setPus(progress.pus, true);
     hud.banner("NEW CARD", page.name, `+${REWARD} pus`);
-    if (hud.onAlbumNews) hud.onAlbumNews();
     sfx.chime();
     if (id !== "antenna" && PAGES.every((p) => p.id === "antenna" || progress.hasPage(p.id))) {
       setTimeout(() => complete("antenna"), 2200);

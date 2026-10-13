@@ -12,7 +12,7 @@ import { sfx } from "./sfx.js";
 
 const SPRAY = dripTexture();
 
-export function createInteractions({ world, player, hud, story, pus, scraps, album, progress, upgrades, stage, isNight, openShop }) {
+export function createInteractions({ world, player, hud, story, pus, scraps, album, progress, upgrades, stage, isNight, openShop, onTalk = () => {} }) {
   let carrying = null;
   let can = 0;
   let combo = 0, comboT = 0;
@@ -44,6 +44,7 @@ export function createInteractions({ world, player, hud, story, pus, scraps, alb
     sfx.grunt();
     progress.add("talks");
     say(p, album.onTalk(p) ?? story.talk(p));
+    onTalk(p);
   }
 
   function nearest(list, extra = 0) {
@@ -57,6 +58,8 @@ export function createInteractions({ world, player, hud, story, pus, scraps, alb
   }
 
   const nearToad = () => floorDist(player, story.toad) - story.toad.radius < REACH + 1;
+  // Toad is big and always close by; whoever else is in reach gets talked to first.
+  const nearestPerson = () => nearest(world.people.filter((p) => p !== story.toad), 0.5) || nearest([story.toad], 0.5);
 
   function say(target, line) {
     if (line) hud.say(target, line);
@@ -90,7 +93,7 @@ export function createInteractions({ world, player, hud, story, pus, scraps, alb
     const zit = nearestZit();
     return !!zit && floorDist(player, zit) - zit.radius < floorDist(player, story.toad) - story.toad.radius;
   };
-  const toadOrZit = () => nearToad() && scraps.pockets.length > 0;
+  const toadOrZit = () => nearToad() && scraps.pockets.length > 0 && story.hungry;
   const feedable = () => toadOrZit() && !zitFirst();
   const popInstead = () => toadOrZit() && zitFirst();
 
@@ -220,7 +223,7 @@ export function createInteractions({ world, player, hud, story, pus, scraps, alb
       return;
     }
 
-    const person = nearest(world.people, 0.5);
+    const person = nearestPerson();
     if (person) {
       talkTo(person);
       return;
@@ -277,7 +280,9 @@ export function createInteractions({ world, player, hud, story, pus, scraps, alb
     if (w.act === "swat") { if (!e.dead && !e.gone) swat(e); return; }
     if (w.act === "grab") { grab(); return; }
     if (w.act === "talk") {
-      if (e === story.toad) { grab(); return; }
+      // Tapping Toad means feed him (if he's hungry), whatever else is nearby.
+      if (e === story.toad && !carrying && scraps.pockets.length && story.hungry && nearToad()) { feedPockets(); return; }
+      if (e === story.toad && carrying) { grab(); return; }
       talkTo(e);
     }
   }
@@ -370,7 +375,7 @@ export function createInteractions({ world, player, hud, story, pus, scraps, alb
         : feedable() ? `FEED TOAD (${scraps.pockets.length})`
         : popInstead() ? "POP"
         : nearest(world.items) ? "GRAB"
-        : nearest(world.people, 0.5) ? (nearest(world.people, 0.5).id === "mirror" ? "SHOP" : giftFor(nearest(world.people, 0.5)) ? "GIVE" : "TALK")
+        : nearestPerson() ? (nearestPerson().id === "mirror" ? "SHOP" : giftFor(nearestPerson()) ? "GIVE" : "TALK")
         : scraps.swatTarget(REACH - 0.6) ? "SWAT" : nearestZit() ? "POP" : "";
       hud.setPrompt(prompt);
     },
