@@ -32,7 +32,7 @@ framework, no server code, deployed to GitHub Pages like
   and people mutter about themselves as you pass (`mutter` in roster.js).
   Toad lumbers slowly around the back of the hub and shuffles toward you
   when you're carrying food (`TOAD_WALK` in `src/life.js`).
-- **Hair sways, faces drip** (`tools/animate.mjs`): every sprite with
+- **Hair sways, faces drip** (`tools/animate.mjs`; one character: `node tools/cutout.mjs weeper && node tools/animate.mjs weeper`): every sprite with
   stray hair or blue liquid gets a 6-frame idle strip (`<name>-anim.webp`).
   Strands sway sideways in proportion to their distance from the body, so
   roots stay put; tears and sweat slowly stretch downward. Falling drops

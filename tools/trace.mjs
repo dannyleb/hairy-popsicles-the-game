@@ -263,7 +263,10 @@ export async function traceDrawing(rgba, w, h, style = STYLE) {
     if (!alpha[i]) continue;
     const r = rgb[i * 3], g = rgb[i * 3 + 1], b = rgb[i * 3 + 2];
     const L = gray[i], C = Math.max(r, g, b) - Math.min(r, g, b);
-    if (L < style.lineDark || (L < around[i] - style.lineContrast && L < style.lineMaxLum && C < style.lineMaxChroma)) rawLine[i] = 1;
+    // Blue pencil (tears, sweat, drool) is color, never line, even when it's
+    // dark against pale skin.
+    const blue = b > r + 18 && b > g - 6;
+    if (L < style.lineDark || (!blue && L < around[i] - style.lineContrast && L < style.lineMaxLum && C < style.lineMaxChroma)) rawLine[i] = 1;
   }
   components(rawLine, w, h, (px) => { if (px.length < style.lineSpeck) for (const p of px) rawLine[p] = 0; });
   const toLine = distance(rawLine, w, h);

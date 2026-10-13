@@ -10,7 +10,7 @@
 // Drips: blue liquid areas (plus their outline) stretch downward from
 // their top, each on its own beat.
 import sharp from "sharp";
-import { readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { distance } from "./trace.mjs";
 
@@ -118,14 +118,18 @@ async function animate(name) {
   return FRAMES;
 }
 
+// `node tools/animate.mjs weeper toad` redoes just those; the rest of the
+// manifest is kept.
+const only = process.argv.slice(2);
 const names = readdirSync(DIR)
   .filter((f) => f.endsWith(".webp") && !f.endsWith("-anim.webp"))
   .map((f) => f.slice(0, -5))
-  .filter((nm) => !SKIP.has(nm));
-const manifest = {};
+  .filter((nm) => !SKIP.has(nm) && (!only.length || only.includes(nm)));
+const manifest = only.length && existsSync(join(DIR, "anim.json")) ? JSON.parse(readFileSync(join(DIR, "anim.json"), "utf8")) : {};
 for (const nm of names) {
+  delete manifest[nm];
   const frames = await animate(nm);
   if (frames) manifest[nm] = frames;
 }
 writeFileSync(join(DIR, "anim.json"), JSON.stringify(manifest, null, 2) + "\n");
-console.log(`  animated: ${Object.keys(manifest).join(", ")}`);
+console.log(`  animated: ${names.filter((nm) => manifest[nm]).join(", ")}`);
