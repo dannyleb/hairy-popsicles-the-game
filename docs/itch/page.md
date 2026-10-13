@@ -62,7 +62,7 @@ Images are in this folder: `cover.jpg` (630x500 at 2x) and `shot-*.jpg`.
   paste the link into **Gameplay video or trailer**.
 - `trailer-pop.gif` (2 MB loop) can go first in the screenshots.
 - YouTube thumbnail: `youtube-thumb.jpg` (1920x1080).
-- Neither file is in the repo (too big); they're rendered locally.
+- The MP4 and GIF aren't in the repo (too big); they're rendered locally.
 
 ---
 
