@@ -31,7 +31,7 @@ export function createInteractions({ world, player, hud, story, pus, scraps, alb
       scraps.pockets.splice(scraps.pockets.indexOf(kind), 1);
       hud.setPockets(scraps.used(), upgrades().pockets);
       sfx.pick();
-      say(p, { pube: "mmm. strands.", crumb: "crunchy. thank you.", fly: "*deep sniff*" }[kind] || "thanks.");
+      say(p, { pube: "mmm. strands.", crumb: "crunchy. thank you.", fly: "*deep sniff*", toenail: "ooh. a big one.", dropping: "...warm." }[kind] || "thanks.");
       album.onGive(p);
       return;
     }

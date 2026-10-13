@@ -37,7 +37,7 @@ export const PAGES = [
   { id: "littleguy", want: { type: "talk", n: 5, text: "Say hi. A lot. (5 times)" } },
   { id: "bigeye", want: { type: "event", event: "eyeball", text: "Knock his loose eye out." } },
   { id: "leprechaun", want: { type: "pay", n: 30, text: "Pay him 30 pus points." } },
-  { id: "droopy", want: { type: "water", n: 2, text: "Perk him up: water him twice." } },
+  { id: "droopy", want: { type: "give", kind: "toenail", n: 2, text: "Bring him 2 toenail clippings. Don't ask what for." } },
   { id: "bricks", want: { type: "slap", n: 3, text: "Knock some sense into him: 3 slaps." } },
   { id: "snoot", want: { type: "give", kind: "fly", n: 2, text: "Let him smell 2 flies." } },
   { id: "fairy", want: { type: "nightTalk", text: "Make a wish with her after dark." } },
