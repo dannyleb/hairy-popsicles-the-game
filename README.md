@@ -201,11 +201,11 @@ src/shop.js          Mirror's shop items, prices and their effects
 src/splash.js        stepping in puddles: splash sound, ring, droplets
 src/tips.js          one-time tutorial tips and what-they-want hints
 src/scraps.js        Toad food: crumbs, hairs, flies (buzz, swat), pockets, respawn
-src/music.js         background music: menu + gameplay loop, "tap to enter" if autoplay is blocked, mute
+src/music.js         background music: alternates two tracks with fades, "tap to enter" if autoplay is blocked, mute
 src/sfx.js           procedural sound: slap, splash, gulp, burp, bubble pop, squish, bloop
 src/ui/hud.js        objective, can meter, verb prompt, speech bubbles, bursts, banners, floating numbers, end card
 src/ui/menus.js      pause menu, album, achievements, curios, shop, share card
-public/              index.html, style.css, audio/theme.mp3 (background music)
+public/              index.html, style.css, audio/theme.mp3 + audio/music-box.mp3 (background music)
 assets/              scans and processed sprites (see assets/README.md)
 tools/cutout.mjs     paper keying, splitting, sprite export
 tools/trace.mjs      rebuild as vector art: traced lines, fixed flesh palette, cel shade, outline

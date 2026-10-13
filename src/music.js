@@ -1,19 +1,22 @@
-// Background music: one looping track for the menu and gameplay. Tries to
+// Background music: a playlist that alternates between the tracks, fading
+// each one out at its end and the next one in, for the menu and gameplay.
+// Tries to
 // start on page load; if the browser blocks that, the "tap to enter" gate
 // gets the first tap and starts it on the menu. Dips a little
 // once the game starts so sound effects cut through, remembers mute, and
 // pauses while the tab is hidden. If the file isn't there, the music
 // buttons stay hidden.
-const SRC = "audio/theme.mp3";
+const TRACKS = ["audio/theme.mp3", "audio/music-box.mp3"];
+const FADE_OUT = 1.5; // seconds before a track ends to start fading it
 const MUTE_KEY = "hairy-popsicles-muted";
 const LEVEL = { menu: 0.6, game: 0.38 };
 
 export function createMusic(buttons) {
   const audio = new Audio();
-  audio.loop = true;
   audio.preload = "none";
   audio.volume = 0;
   let available = false, wanted = false, target = LEVEL.menu, fadeRaf = 0;
+  let track = 0, ending = false;
   let muted = false;
   try { muted = localStorage.getItem(MUTE_KEY) === "1"; } catch {}
 
@@ -40,7 +43,7 @@ export function createMusic(buttons) {
   function play() {
     wanted = true;
     if (!available || muted || document.hidden) return;
-    if (!audio.src) audio.src = SRC;
+    if (!audio.src) audio.src = TRACKS[track];
     if (!audio.paused) return fadeTo(target);
     audio.play().then(() => fadeTo(target)).catch(() => {});
   }
@@ -50,7 +53,7 @@ export function createMusic(buttons) {
   async function autoplay() {
     wanted = true;
     if (muted) return "muted";
-    audio.src = SRC;
+    audio.src = TRACKS[track];
     try {
       await audio.play();
       fadeTo(target);
@@ -73,6 +76,22 @@ export function createMusic(buttons) {
     else play();
   }
 
+  // Fade the track out just before it ends, then start the other one.
+  audio.addEventListener("timeupdate", () => {
+    if (!ending && audio.duration && audio.duration - audio.currentTime < FADE_OUT) {
+      ending = true;
+      fadeTo(0.001, FADE_OUT);
+    }
+  });
+  audio.addEventListener("ended", () => {
+    ending = false;
+    track = (track + 1) % TRACKS.length;
+    audio.src = TRACKS[track];
+    audio.volume = 0;
+    if (!wanted || muted || document.hidden) return;
+    audio.play().then(() => fadeTo(target, 2)).catch(() => {});
+  });
+
   for (const b of buttons) b.addEventListener("click", (e) => { e.stopPropagation(); toggle(); });
 
   document.addEventListener("visibilitychange", () => {
@@ -80,7 +99,7 @@ export function createMusic(buttons) {
     else if (wanted && !muted && available) play();
   });
 
-  fetch(SRC, { method: "HEAD" })
+  fetch(TRACKS[0], { method: "HEAD" })
     .then((r) => { available = r.ok; render(); if (available && wanted) play(); })
     .catch(() => render());
   render();
