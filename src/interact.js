@@ -12,7 +12,7 @@ import { sfx } from "./sfx.js";
 
 const SPRAY = dripTexture();
 
-export function createInteractions({ world, player, hud, story, pus, scraps, album, progress, upgrades, stage, isNight, openShop, onTalk = () => {} }) {
+export function createInteractions({ world, player, hud, story, pus, scraps, album, progress, upgrades, stage, isNight, onTalk = () => {} }) {
   let carrying = null;
   let can = 0;
   let combo = 0, comboT = 0;
@@ -21,17 +21,11 @@ export function createInteractions({ world, player, hud, story, pus, scraps, alb
 
   hud.setCan(can, canSize());
 
-  // Mirror runs the shop; anyone else who wants a scrap you're carrying
-  // gets one when you press E next to them.
+  // Anyone who wants a scrap you're carrying gets one when you press E next
+  // to them. (Mirror's shop lives in the menu, not on Mirror.)
   const giftFor = (p) => album.wants(p, scraps.pockets);
 
   function talkTo(p) {
-    if (p.id === "mirror") {
-      sfx.grunt();
-      say(p, album.onTalk(p) ?? "Let's see what you can afford.");
-      openShop();
-      return;
-    }
     const kind = giftFor(p);
     if (kind) {
       scraps.pockets.splice(scraps.pockets.indexOf(kind), 1);
@@ -375,7 +369,7 @@ export function createInteractions({ world, player, hud, story, pus, scraps, alb
         : feedable() ? `FEED TOAD (${scraps.pockets.length})`
         : popInstead() ? "POP"
         : nearest(world.items) ? "GRAB"
-        : nearestPerson() ? (nearestPerson().id === "mirror" ? "SHOP" : giftFor(nearestPerson()) ? "GIVE" : "TALK")
+        : nearestPerson() ? (giftFor(nearestPerson()) ? "GIVE" : "TALK")
         : scraps.swatTarget(REACH - 0.6) ? "SWAT" : nearestZit() ? "POP" : "";
       hud.setPrompt(prompt);
     },

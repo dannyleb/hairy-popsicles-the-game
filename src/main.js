@@ -110,13 +110,13 @@ async function boot() {
     player.speedMul = u.speed;
     hud.setPockets(scraps.pockets.length, u.pockets);
   };
-  const tips = createTips({ progress, hud, story, scraps, upgrades: ups, isNight });
+  const tips = createTips({ progress, hud, story, scraps, upgrades: ups, isNight, guide: (to) => menus.setGuide(to) });
   const menus = createMenus({
     progress, hud, img, onShopChange: applyShop, onView: tips.onView,
     setPaused: (v) => { paused = v; if (v) { press = null; verbs.stop(); } },
   });
   const verbs = createInteractions({
-    world, player, hud, story, pus, scraps, album, progress, upgrades: ups, stage, isNight, openShop: menus.openShop,
+    world, player, hud, story, pus, scraps, album, progress, upgrades: ups, stage, isNight,
     onTalk: tips.onTalk,
   });
   const life = createLife({ world, player, hud, story, scraps, isNight });

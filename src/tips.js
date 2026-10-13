@@ -1,7 +1,8 @@
 // A gentle tutorial: short tips that show up the first time they're useful,
 // one at a time, and never again once seen (saved with progress). Tips about
 // cards, achievements and the shop point at the menu button and make it
-// pulse. Talking to someone whose card you haven't earned also tells you,
+// pulse, and the row they're about pulses inside the menu (go:), so players
+// find Mirror's shop and the album themselves. Talking to someone whose card you haven't earned also tells you,
 // once per visit, what they want.
 import { wantOf } from "./album.js";
 import { ITEMS, maxOf, priceOf } from "./shop.js";
@@ -11,7 +12,7 @@ const GAP = 14;       // seconds between tips
 const SHOW = 11;      // seconds a tip stays up (unless it's done sooner)
 const FULL_FOR = 4;   // seconds of full pockets before the pockets tip
 
-export function createTips({ progress, hud, story, scraps, upgrades, isNight }) {
+export function createTips({ progress, hud, story, scraps, upgrades, isNight, guide = () => {} }) {
   const touch = () => document.documentElement.classList.contains("touch");
   const viewed = new Set();   // menu screens looked at this visit
   const told = new Set();     // whose wants you've been told this visit
@@ -23,6 +24,11 @@ export function createTips({ progress, hud, story, scraps, upgrades, isNight }) 
     const lvl = progress.owns("pockets");
     return lvl < maxOf(pocketsItem) && progress.pus >= priceOf(pocketsItem, lvl);
   };
+  // Can you buy anything at all yet?
+  const canShop = () => ITEMS.some((it) => {
+    const lvl = progress.owns(it.id);
+    return lvl < maxOf(it) && progress.pus >= priceOf(it, lvl);
+  });
 
   // In order of priority. when: show it now? done: it's served its purpose.
   const TIPS = [
@@ -43,6 +49,7 @@ export function createTips({ progress, hud, story, scraps, upgrades, isNight }) 
       when: () => fullFor >= FULL_FOR,
       done: () => !pocketsFull() || viewed.has("shop"),
       menu: true,
+      go: () => (canAffordPockets() ? "shop" : null),
       text: () => (canAffordPockets()
         ? "Pockets full! You've got enough pus for bigger ones at Mirror's shop, in the menu."
         : story.hungry
@@ -62,6 +69,7 @@ export function createTips({ progress, hud, story, scraps, upgrades, isNight }) 
       when: () => progress.pageCount() > 0,
       done: () => viewed.has("album:pages"),
       menu: true,
+      go: () => "album",
       text: () => "You earned your first card! It's in your Self-Portrait Album, in the menu.",
     },
     {
@@ -69,14 +77,16 @@ export function createTips({ progress, hud, story, scraps, upgrades, isNight }) 
       when: () => progress.achievementCount() > 0,
       done: () => viewed.has("album:achievements"),
       menu: true,
+      go: () => "achievements",
       text: () => "Achievement unlocked. There are 18. See them all in the menu.",
     },
     {
       id: "shop",
-      when: () => progress.pus >= 40 && progress.stat("bought") === 0,
+      when: () => canShop() && progress.stat("bought") === 0,
       done: () => viewed.has("shop"),
       menu: true,
-      text: () => `${progress.pus} pus! Spend it at Mirror's shop in the menu: bigger pockets, a pus magnet, faster feet, things to wear.`,
+      go: () => "shop",
+      text: () => `You've got ${progress.pus} pus! Open the menu and visit Mirror's shop: bigger pockets, a pus magnet, faster feet, things to wear.`,
     },
     {
       id: "wants",
@@ -110,6 +120,7 @@ export function createTips({ progress, hud, story, scraps, upgrades, isNight }) 
     shownFor = 0;
     progress.markTip(tip.id);
     hud.tip(tip.text(), !!tip.menu);
+    if (tip.go && tip.go()) guide(tip.go());
   }
   function hide() {
     if (!current) return;

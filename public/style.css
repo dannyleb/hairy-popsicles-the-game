@@ -442,6 +442,14 @@ html.touch #pauseBtn { top: 74px; right: 48px; width: 32px; height: 32px; paddin
 .pauseList { display: flex; flex-direction: column; gap: 10px; padding: 6px 0; }
 .pauseList .chunk { width: 100%; font-size: 21px; }
 .pauseList .linkBtn { align-self: center; margin-top: 4px; }
+/* The row a tip is pointing at. */
+.pauseList .chunk.guide { position: relative; background: #f5e3a1; animation: guidePulse 1.4s ease-in-out infinite; }
+.pauseList .chunk.guide::after {
+  content: "\25C0"; position: absolute; right: 16px; top: 50%; translate: 0 -50%;
+  font-size: 22px; color: var(--ink); animation: guidePoint 0.9s ease-in-out infinite;
+}
+@keyframes guidePulse { 0%, 100% { box-shadow: 3px 4px 0 rgba(46, 22, 22, 0.85), 0 0 0 0 rgba(241, 197, 108, 0); } 50% { box-shadow: 3px 4px 0 rgba(46, 22, 22, 0.85), 0 0 0 6px rgba(241, 197, 108, 0.8); } }
+@keyframes guidePoint { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(6px); } }
 
 /* ---------- New player ---------- */
 #startCard #returning { font-size: 15px; margin: 10px 0 0; opacity: 0.8; }

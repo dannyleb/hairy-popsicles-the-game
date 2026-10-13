@@ -137,8 +137,10 @@ collection. Red Eye only comes out at night.
 
 **Tips** (`src/tips.js`): a gentle tutorial. One short tip at a time,
 shown the first time it's useful and never again (saved): pocket things,
-feed Toad, pop pimples, pockets full (points at Mirror's shop), first card,
-first achievement, enough pus to shop, Toad asleep, nightfall. Talking to
+feed Toad, pop pimples, pockets full, first card, first achievement, enough
+pus to buy something, Toad asleep, nightfall. Tips about the menu make the
+menu button pulse and highlight the row they mean inside it (Shop, Album,
+Achievements). Talking to
 someone whose card you haven't earned tells you what they want.
 
 **Menu news.** When there's something new (a card, an achievement, a curio,
@@ -156,7 +158,9 @@ and it fills in with the original pencil scan plus the artist's note
 (`src/album-notes.js`, one line per character, empty until written). Each
 card pays 15 pus. Antenna (you) fills in last.
 
-**Mirror's shop.** Mirror stands in the starting area, right side. Talk to him to spend pus: bigger pockets, bigger
+**Mirror's shop** lives in the menu only (Mirror himself, in the starting area, just talks and drops
+hints). A tip points players there once they can afford something, and the Shop row pulses inside
+the menu. Spend pus on: bigger pockets, bigger
 can, glob magnet, fly bait, faster feet, and cosmetics drawn on you
 (wart, unibrow, stain, tuft, drool). `ITEMS` in `src/shop.js`.
 
