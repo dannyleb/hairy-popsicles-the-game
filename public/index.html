@@ -24,7 +24,7 @@
         <div id="objTitle">&mdash;</div>
         <div id="objSub"></div>
         <div id="belly" aria-label="Toad's belly"><span class="bellyLbl">TOAD'S BELLY</span><span class="bellyTrack"><i id="bellyFill"></i></span><span id="bellyTxt"></span></div>
-        <div id="pockets">pockets empty</div>
+        <div id="pockets" aria-label="Pockets"><span class="bellyLbl">POCKETS</span><span class="pocketTrack"><i id="pocketFill"></i></span><span id="pocketTxt">0/12</span></div>
       </div>
       <div id="pusWrap" aria-label="Pus points"><span class="pusDrop"></span><span class="pusTxt"><b id="pusCount">0</b><small>PUS POINTS</small></span></div>
       <button id="pauseBtn" aria-label="Pause and menu"><i></i><i></i><i></i></button>
@@ -85,17 +85,30 @@
       </div>
       <h1>Hairy Popsicles</h1>
       <p>Toad is hungry. He's always hungry. Fill him up.</p>
-      <div class="controlsGrid forDesk">
-        <div><strong>Keyboard</strong><br/>WASD / arrows &mdash; walk (or click where to go)<br/>Shift &mdash; run<br/>Space &mdash; slap / swat<br/>E &mdash; feed / grab / talk<br/>Q &mdash; water</div>
-        <div class="popTip"><strong>Feed Toad</strong> &mdash; walk over crumbs and hairs, swat flies, then press E next to Toad. Fill his belly to open new ground.<br/><strong>Pop pimples</strong> &mdash; click one, or walk up and press E / Space. Slurp the pus for points.</div>
-      </div>
-      <div class="controlsGrid forTouch">
-        <div class="popTip">
-          <strong>Tap anywhere</strong> to walk there.<br/>
-          <strong>Tap Toad</strong> to feed him, <strong>a fly</strong> to swat it, <strong>a pimple</strong> to pop it, <strong>anyone</strong> to talk.<br/>
-          Walk over crumbs and hairs to pocket them. Fill Toad's belly to open new ground.<br/>
-          <strong>SLAP</strong> and <strong>WATER</strong> buttons for the rest.
-        </div>
+      <div class="intro">
+        <section class="panel">
+          <h2>How to play</h2>
+          <div class="forDesk">
+            <div class="keys">
+              <span><kbd>WASD</kbd> walk</span><span><kbd>Shift</kbd> run</span><span><kbd>Space</kbd> slap</span>
+              <span><kbd>E</kbd> feed / grab / talk</span><span><kbd>Q</kbd> water</span><span><kbd>Esc</kbd> menu</span>
+            </div>
+            <p class="tip">Or just click where to go. Walk over crumbs and hairs, swat flies, then press E by Toad. Click a pimple to pop it and slurp the pus.</p>
+          </div>
+          <div class="forTouch">
+            <p class="tip"><b>Hold</b> anywhere to walk toward your thumb. <b>Tap</b> Toad to feed him, a fly to swat it, a pimple to pop it, anyone to talk. Walk over crumbs and hairs to pocket them.</p>
+          </div>
+          <p class="tip">Fill Toad's belly to open new ground.</p>
+        </section>
+        <section class="panel">
+          <h2>Keep coming back</h2>
+          <ul class="goals">
+            <li><b>Collect cards.</b> Every character has a card in your Self-Portrait Album. Do the gross little thing they want.</li>
+            <li><b>Level up.</b> Spend pus at Mirror's shop: bigger pockets, a pus magnet, faster feet, things to wear.</li>
+            <li><b>Achievements.</b> 18 to unlock. Chain pops, find golden pimples and curios, meet whoever comes out at night.</li>
+          </ul>
+          <p class="tip dim">All in the menu <span class="menuIcon" aria-hidden="true"><i></i><i></i><i></i></span> while you play.</p>
+        </section>
       </div>
       <button id="pressStart" class="chunk" disabled>LOADING&hellip;</button>
       <button class="musicBtn" id="musicMenu" hidden aria-label="Turn music off"></button>

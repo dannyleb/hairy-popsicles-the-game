@@ -44,7 +44,7 @@ export function createMenus({ progress, hud, img, setPaused, onShopChange }) {
     if (mode === "shop") return renderShop();
     if (mode === "pause") return renderPause();
     title.textContent = "Self-Portrait Album";
-    const names = { pages: `Pages ${progress.pageCount()}/${PAGES.length}`, achievements: `Achievements ${progress.achievementCount()}/${ACHIEVEMENTS.length}`, curios: `Curios ${CURIOS.filter((c) => progress.hasCurio(c.id)).length}/${CURIOS.length}`, share: "Share" };
+    const names = { pages: `Cards ${progress.pageCount()}/${PAGES.length}`, achievements: `Achievements ${progress.achievementCount()}/${ACHIEVEMENTS.length}`, curios: `Curios ${CURIOS.filter((c) => progress.hasCurio(c.id)).length}/${CURIOS.length}`, share: "Share" };
     tabs.innerHTML = Object.entries(names).map(([k, v]) => `<button data-tab="${k}" class="${k === tab ? "on" : ""}">${v}</button>`).join("");
     for (const b of tabs.querySelectorAll("button")) b.addEventListener("click", () => { tab = b.dataset.tab; render(); });
     ({ pages: renderPages, achievements: renderAchievements, curios: renderCurios, share: renderShare })[tab]();
@@ -59,7 +59,7 @@ export function createMenus({ progress, hud, img, setPaused, onShopChange }) {
       return `<button class="pageCard ${got ? "got" : "locked"}" data-id="${p.id}">
         <img src="assets/sprites/${p.sprite}.webp" alt="" />
         <span class="pName">${got ? esc(p.name) : "???"}</span>
-        <span class="pWant">${got ? "page filled" : esc(want.text) + prog}</span>
+        <span class="pWant">${got ? "card earned" : esc(want.text) + prog}</span>
       </button>`;
     }).join("")}</div>`;
     for (const card of body.querySelectorAll(".pageCard.got")) card.addEventListener("click", () => showPage(card.dataset.id));
@@ -136,7 +136,7 @@ export function createMenus({ progress, hud, img, setPaused, onShopChange }) {
       ["Pimples popped", progress.stat("pops")],
       ["Best combo", progress.stat("maxCombo")],
       ["Flies swatted", progress.stat("flies")],
-      ["Album pages", `${progress.pageCount()}/${PAGES.length}`],
+      ["Album cards", `${progress.pageCount()}/${PAGES.length}`],
       ["Achievements", `${progress.achievementCount()}/${ACHIEVEMENTS.length}`],
       ["Curios", `${CURIOS.filter((q) => progress.hasCurio(q.id)).length}/${CURIOS.length}`],
       ["Days on the skin", progress.stat("days")],
@@ -159,7 +159,7 @@ export function createMenus({ progress, hud, img, setPaused, onShopChange }) {
       ctx.drawImage(pic, 520, y - 10, pw, ph);
       ctx.textAlign = "left";
       ctx.font = '34px "Patrick Hand", sans-serif';
-      ctx.fillText("Latest page:", 540 + pw, y + 80);
+      ctx.fillText("Latest card:", 540 + pw, y + 80);
       ctx.font = '40px "Rubik Wet Paint", cursive';
       ctx.fillText(p.name, 540 + pw, y + 128);
     }
@@ -202,7 +202,7 @@ export function createMenus({ progress, hud, img, setPaused, onShopChange }) {
     tabs.innerHTML = "";
     body.innerHTML = `<div class="pauseList">
       <button class="chunk" data-go="resume">&#9654; Resume</button>
-      <button class="chunk" data-go="album">Self-Portrait Album <small>${progress.pageCount()}/${PAGES.length} pages</small></button>
+      <button class="chunk" data-go="album">Self-Portrait Album <small>${progress.pageCount()}/${PAGES.length} cards</small></button>
       <button class="chunk" data-go="achievements">Achievements <small>${progress.achievementCount()}/${ACHIEVEMENTS.length}</small></button>
       <button class="chunk" data-go="shop">Mirror's Shop <small>${progress.pus} pus</small></button>
       <button class="chunk" data-go="share">Share your Self-Portrait</button>

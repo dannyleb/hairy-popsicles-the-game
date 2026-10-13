@@ -42,7 +42,7 @@ export const PAGES = [
   { id: "snoot", want: { type: "give", kind: "fly", n: 2, text: "Let him smell 2 flies." } },
   { id: "fairy", want: { type: "nightTalk", text: "Make a wish with her after dark." } },
   { id: "sweats", want: { type: "water", n: 4, text: "Help him cool off: water him 4 times." } },
-  { id: "antenna", want: { type: "all", text: "Fill every other page." } },
+  { id: "antenna", want: { type: "all", text: "Collect every other card." } },
 ];
 
 const roster = Object.fromEntries(ROSTER.map((c) => [c.id, c]));
@@ -61,7 +61,7 @@ export function createAlbum({ progress, hud, world, player, isNight }) {
     const page = byId[id];
     progress.addPus(REWARD);
     hud.setPus(progress.pus, true);
-    hud.banner("ALBUM PAGE", page.name, `+${REWARD} pus`);
+    hud.banner("NEW CARD", page.name, `+${REWARD} pus`);
     if (hud.onAlbumNews) hud.onAlbumNews();
     sfx.chime();
     if (id !== "antenna" && PAGES.every((p) => p.id === "antenna" || progress.hasPage(p.id))) {

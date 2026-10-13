@@ -2,6 +2,8 @@
 //   - everyone breathes; Toad heaves
 //   - heads on sticks bob, tilt toward you when you're near, and shudder
 //   - walkers wander around their spot, waddling and facing where they go
+//   - Toad lumbers around the middle of the page, and shuffles toward you
+//     when you're carrying food
 //   - hoppers hop, floaters hover
 //   - criers, sweaters and droolers shed drops that land as teardrops you
 //     can collect for your watering can
@@ -12,7 +14,10 @@ import { AREA, DEPTH } from "./config.js";
 import { floorDist, makeEntity, squash } from "./world.js";
 import { puddleTexture } from "./ink.js";
 
-const WALK_SPEED = 1.3;
+const WALK = { speed: 1.3, range: 3.5, gRange: 1.5, gMin: 0.6, gMax: AREA.front - 0.4, steps: 8, sway: 0.09, lift: 0.12, squash: 0.18, wait: [2, 6] };
+// Toad is heavy: slow, short heaving steps, long rests, and he keeps to the
+// back half of the hub so the floor in front stays open.
+const TOAD_WALK = { speed: 0.55, range: 4, gRange: 1.2, gMin: 1.1, gMax: 3.4, steps: 3.2, sway: 0.05, lift: 0.04, squash: 0.35, wait: [3, 8] };
 const SHED = [9, 18];           // seconds between drops (only near you)
 const DROP_LIFE = 25;           // seconds a shed drop stays on the ground
 const MUTTER_GAP = [6, 11];     // seconds between anyone muttering
@@ -70,39 +75,50 @@ export function createLife({ world, player, hud, story, scraps, isNight = () => 
     return [-AREA.gateX + 1.5, AREA.gateX - 1.5];
   }
 
-  function wander(p, dt) {
+  // Somewhere to walk to near home that doesn't land on anyone else.
+  function pickGoal(p, w) {
+    const [lo, hi] = zoneBounds(p.home[0]);
+    for (let i = 0; i < 8; i++) {
+      const goal = [
+        Math.max(lo + p.radius, Math.min(hi - p.radius, p.home[0] + rand(-w.range, w.range))),
+        Math.max(w.gMin, Math.min(w.gMax, p.home[1] + rand(-w.gRange, w.gRange))),
+      ];
+      const spot = { x: goal[0], g: goal[1] };
+      if (world.people.every((o) => o === p || !o.visible || floorDist(spot, o) > p.radius + o.radius + 0.6)) return goal;
+    }
+    return null;
+  }
+
+  function wander(p, dt, w = WALK) {
     if (!p.goal) {
       p.wait -= dt;
       p.walkT = 0;
       p.lift = 0;
       if (p.wait <= 0) {
-        const [lo, hi] = zoneBounds(p.home[0]);
-        p.goal = [
-          Math.max(lo, Math.min(hi, p.home[0] + rand(-3.5, 3.5))),
-          Math.max(0.6, Math.min(AREA.front - 0.4, p.home[1] + rand(-1.5, 1.5))),
-        ];
+        p.goal = pickGoal(p, w);
+        if (!p.goal) p.wait = rand(...w.wait);
       }
       return;
     }
     // Stand still while you're right next to them.
-    if (floorDist(player, p) < p.radius + 1.4) return;
+    if (floorDist(player, p) < p.radius + 1.4) { p.lift = 0; return; }
     const dx = p.goal[0] - p.x, dg = p.goal[1] - p.g;
     const d = Math.hypot(dx, dg * DEPTH);
     if (d < 0.1) {
       p.goal = null;
-      p.wait = rand(2, 6);
+      p.wait = rand(...w.wait);
       p.lift = 0;
       return;
     }
-    const step = Math.min(d, WALK_SPEED * dt);
+    const step = Math.min(d, w.speed * dt);
     p.x += (dx / d) * step;
     p.g += (dg / d) * step / DEPTH;
     if (Math.abs(dx) > 0.05) p.flip = dx < 0;
     const before = Math.floor(p.walkT / Math.PI);
-    p.walkT += dt * 8;
-    if (Math.floor(p.walkT / Math.PI) !== before) squash(p, 0.18);
-    p.rot += Math.sin(p.walkT) * 0.09;
-    p.lift = Math.abs(Math.sin(p.walkT)) * 0.12;
+    p.walkT += dt * w.steps;
+    if (Math.floor(p.walkT / Math.PI) !== before) squash(p, w.squash);
+    p.rot += Math.sin(p.walkT) * w.sway;
+    p.lift = Math.abs(Math.sin(p.walkT)) * w.lift;
   }
 
   function shed(p) {
@@ -175,6 +191,7 @@ export function createLife({ world, player, hud, story, scraps, isNight = () => 
         }
 
         if (p.move === "walk") wander(p, dt);
+        else if (p === toad && !story.done) wander(p, dt, TOAD_WALK);
         else if (p.move === "float") {
           p.lift = 0.25 + Math.sin(t * 1.4 + p.phase) * 0.2;
           p.rot += Math.sin(t * 0.8 + p.phase) * 0.04;
@@ -197,6 +214,12 @@ export function createLife({ world, player, hud, story, scraps, isNight = () => 
       // Toad perks up when you've got food for him.
       const hasFood = scraps.pockets.length > 0;
       if (hasFood && floorDist(player, toad) < 10 && !story.done) {
+        // Shuffle over to whoever has the food.
+        const [lo, hi] = zoneBounds(toad.home[0]);
+        toad.goal = [
+          Math.max(lo + toad.radius, Math.min(hi - toad.radius, toad.home[0] + Math.max(-TOAD_WALK.range, Math.min(TOAD_WALK.range, player.x - toad.home[0])))),
+          Math.max(TOAD_WALK.gMin, Math.min(TOAD_WALK.gMax, player.g)),
+        ];
         excitedT -= dt;
         if (excitedT <= 0) { squash(toad, 0.7); excitedT = 0.7; }
       }

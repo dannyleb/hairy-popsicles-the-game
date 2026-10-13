@@ -54,7 +54,11 @@ export function createHud(stage) {
 
     setPockets(n, max = 12) {
       const el = $("pockets");
-      el.textContent = n ? `pockets ${n}/${max}` : "pockets empty";
+      const k = Math.min(1, n / max);
+      $("pocketFill").style.width = `${Math.round(k * 100)}%`;
+      $("pocketTxt").textContent = n >= max ? `FULL ${n}/${max}` : `${n}/${max}`;
+      el.style.setProperty("--slots", max);
+      el.dataset.level = k >= 0.75 ? "high" : k >= 0.4 ? "mid" : "low";
       el.classList.toggle("full", n >= max);
       if (n) {
         el.classList.remove("bump");

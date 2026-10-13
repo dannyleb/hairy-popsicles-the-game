@@ -107,7 +107,7 @@ async function boot() {
     player.speedMul = u.speed;
     hud.setPockets(scraps.pockets.length, u.pockets);
   };
-  const menus = createMenus({ progress, hud, img, setPaused: (v) => (paused = v), onShopChange: applyShop });
+  const menus = createMenus({ progress, hud, img, setPaused: (v) => { paused = v; if (v) { press = null; verbs.stop(); } }, onShopChange: applyShop });
   const verbs = createInteractions({
     world, player, hud, story, pus, scraps, album, progress, upgrades: ups, stage, isNight, openShop: menus.openShop,
   });
@@ -130,6 +130,12 @@ async function boot() {
   // things first: pimples, scraps, items; then characters; else ground).
   const canvas = document.getElementById("gameCanvas");
   let press = null;
+  // Pausing (or losing the finger) mid-hold must not leave the player
+  // steering toward a thumb that's gone.
+  function dropPress() {
+    press = null;
+    verbs.release();
+  }
   const floorAt = (e) => {
     const p = stage.toWorld(e.clientX, e.clientY);
     return [p.x, Math.max(0.4, Math.min(AREA.front, p.g))];
@@ -160,6 +166,7 @@ async function boot() {
   };
   canvas.addEventListener("pointerup", endPress);
   canvas.addEventListener("pointercancel", endPress);
+  canvas.addEventListener("lostpointercapture", (e) => { if (press && e.pointerId === press.id) dropPress(); });
 
   // Escape or P pauses (the menu closes itself on Escape).
   window.addEventListener("keydown", (e) => {

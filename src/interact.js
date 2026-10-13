@@ -84,6 +84,15 @@ export function createInteractions({ world, player, hud, story, pus, scraps, alb
   }
 
   const nearestZit = () => nearest(world.pimples.filter((p) => p.kind === "pimple"));
+  // Toad follows you when you carry food; a pimple right at your feet still
+  // gets popped before he gets fed.
+  const zitFirst = () => {
+    const zit = nearestZit();
+    return !!zit && floorDist(player, zit) - zit.radius < floorDist(player, story.toad) - story.toad.radius;
+  };
+  const toadOrZit = () => nearToad() && scraps.pockets.length > 0;
+  const feedable = () => toadOrZit() && !zitFirst();
+  const popInstead = () => toadOrZit() && zitFirst();
 
   function swat(f) {
     player.lunge = 0.25;
@@ -156,7 +165,7 @@ export function createInteractions({ world, player, hud, story, pus, scraps, alb
       const e = makeEntity(scraps.picture(kind), kind === "fly" ? 0.8 : 0.6, player.x, player.g, { shadow: false, kind: "food" });
       e.lift = player.top * 0.7;
       world.fx.push(e);
-      fly(e, { x: toad.x + 0.4, g: toad.g + 0.01, lift: toad.top * 0.45 }, 0.5, 1.6, () => {
+      fly(e, { x: toad.x + (toad.flip ? -0.4 : 0.4), g: toad.g + 0.01, lift: toad.top * 0.45 }, 0.5, 1.6, () => {
         world.fx.splice(world.fx.indexOf(e), 1);
         sfx.gulp();
         say(toad, story.eat(kind));
@@ -168,8 +177,13 @@ export function createInteractions({ world, player, hud, story, pus, scraps, alb
   }
 
   function grab() {
-    if (!carrying && nearToad() && scraps.pockets.length) {
+    if (!carrying && feedable()) {
       feedPockets();
+      return;
+    }
+    if (!carrying && popInstead()) {
+      player.lunge = 0.25;
+      pop(nearestZit());
       return;
     }
     if (carrying) {
@@ -179,7 +193,7 @@ export function createInteractions({ world, player, hud, story, pus, scraps, alb
         item.carried = false;
         item.eaten = true;
         const toad = story.toad;
-        fly(item, { x: toad.x + 0.4, g: toad.g + 0.01, lift: toad.top * 0.45 }, 0.6, 2, () => {
+        fly(item, { x: toad.x + (toad.flip ? -0.4 : 0.4), g: toad.g + 0.01, lift: toad.top * 0.45 }, 0.6, 2, () => {
           world.items.splice(world.items.indexOf(item), 1);
           say(toad, story.fed(item));
         });
@@ -287,6 +301,8 @@ export function createInteractions({ world, player, hud, story, pus, scraps, alb
     if (mark) world.tapMark = { x, g, t: 0.35 };
   }
   function release() { hold = null; }
+  // Pausing stops any walk in progress, held or tapped.
+  function stop() { hold = null; walkTo = null; }
 
   // Turns a held point or pending walk into movement input; real input
   // cancels both.
@@ -325,6 +341,7 @@ export function createInteractions({ world, player, hud, story, pus, scraps, alb
     tap,
     holdAt,
     release,
+    stop,
     steer,
 
     update(input, dt) {
@@ -350,7 +367,8 @@ export function createInteractions({ world, player, hud, story, pus, scraps, alb
 
       const prompt = carrying
         ? (nearToad() && story.edible(carrying) ? "FEED TOAD" : "DROP")
-        : nearToad() && scraps.pockets.length ? `FEED TOAD (${scraps.pockets.length})`
+        : feedable() ? `FEED TOAD (${scraps.pockets.length})`
+        : popInstead() ? "POP"
         : nearest(world.items) ? "GRAB"
         : nearest(world.people, 0.5) ? (nearest(world.people, 0.5).id === "mirror" ? "SHOP" : giftFor(nearest(world.people, 0.5)) ? "GIVE" : "TALK")
         : scraps.swatTarget(REACH - 0.6) ? "SWAT" : nearestZit() ? "POP" : "";

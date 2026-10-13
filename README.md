@@ -30,6 +30,8 @@ framework, no server code, deployed to GitHub Pages like
   and then, Shiv and Balloon Man wander, Little Guy hops, Fairy hovers,
   criers/sweaters/droolers shed drops that land as collectible teardrops,
   and people mutter about themselves as you pass (`mutter` in roster.js).
+  Toad lumbers slowly around the back of the hub and shuffles toward you
+  when you're carrying food (`TOAD_WALK` in `src/life.js`).
 - **Hair sways, faces drip** (`tools/animate.mjs`): every sprite with
   stray hair or blue liquid gets a 6-frame idle strip (`<name>-anim.webp`).
   Strands sway sideways in proportion to their distance from the body, so
@@ -98,8 +100,11 @@ is itself the action button, next to round SLAP and WATER buttons, and the
 top HUD is compacted. The title screen shows touch instructions.
 
 **Feeding Toad.** Walk over crumbs and curly pubic hairs to pocket them;
-swat house flies out of the air (Space) and pick them up. Pockets hold 12.
-Press E next to Toad to feed him everything you're carrying. Values are in
+swat house flies out of the air (Space) and pick them up. Pockets hold 12
+(more with upgrades); the POCKETS bar under Toad's belly fills up and turns
+red and pulses when you're full.
+Press E next to Toad to feed him everything you're carrying (if a pimple is
+closer to you than Toad, E pops it instead). Values are in
 `FOOD` in `src/config.js` (crumb/hair 1, fly 3). Scraps respawn in their
 zone after a while. Big meals, carried over by hand:
 
@@ -127,12 +132,16 @@ x5 at 8, with rising pitch and screen shake.
 leaves a mystery glob holding a curio (toenail, tooth, ...) for your
 collection. Red Eye only comes out at night.
 
-**Self-Portrait Album** (pause menu). Every character has a page that
+**Title screen** explains how to play and the long game (cards, leveling
+up, achievements), laid out to fit without scrolling from phones to
+desktops.
+
+**Self-Portrait Album** (pause menu). Every character has a card that
 starts as a silhouette. Do the small, gross thing they want (`PAGES` in
 `src/album.js`: talk, slap, water, bring scraps, pay pus, after dark, ...)
 and it fills in with the original pencil scan plus the artist's note
 (`src/album-notes.js`, one line per character, empty until written). Each
-page pays 15 pus. Antenna (you) fills in last.
+card pays 15 pus. Antenna (you) fills in last.
 
 **Mirror's shop.** Talk to Mirror to spend pus: bigger pockets, bigger
 can, glob magnet, fly bait, faster feet, and cosmetics drawn on you
@@ -145,10 +154,10 @@ gives a gift of pus that grows with total days visited; missing days
 never loses anything.
 
 **Share card.** The pause menu builds a 1080x1350 image of you (with
-cosmetics), your stats and your latest page, shared with the phone's
+cosmetics), your stats and your latest card, shared with the phone's
 share sheet or downloaded.
 
-**What's saved.** Pus, pages, curios, purchases, stats and achievements
+**What's saved.** Pus, cards, curios, purchases, stats and achievements
 persist per browser (`localStorage`, `src/progress.js`). Toad's belly and
 opened zones reset each session.
 
@@ -172,9 +181,9 @@ src/ink.js           everything drawn at runtime: skin tiles, pimples, stick, sh
 src/player.js        movement, zone bounds, collisions, waddle and slap lunge
 src/controls.js      keyboard, D-pad and verb buttons
 src/pus.js           pus globs, golden pimples, mystery curios, stains, pimple regrowth
-src/progress.js      everything saved: pus, stats, pages, curios, shop, achievements, daily gift
-src/album.js         Self-Portrait Album pages and what each character wants
-src/album-notes.js   the artist's note for each page
+src/progress.js      everything saved: pus, stats, cards, curios, shop, achievements, daily gift
+src/album.js         Self-Portrait Album cards and what each character wants
+src/album-notes.js   the artist's note for each card
 src/shop.js          Mirror's shop items, prices and their effects
 src/splash.js        stepping in puddles: splash sound, ring, droplets
 src/scraps.js        Toad food: crumbs, hairs, flies (buzz, swat), pockets, respawn
