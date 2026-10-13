@@ -28,7 +28,7 @@ export const ROSTER = [
   // West.
   { id: "roast", name: "Roast", sprite: "roast", height: 1.8, at: [-31, 3.8], radius: 1.2 },
   { id: "conehead", name: "Conehead", sprite: "conehead", height: 2.8, stick: true, at: [-23, 5.1], drip: [0, 0.55], mutter: ["I'm smiling! Can't you tell I'm smiling?", "Happy tears. Probably."] },
-  { id: "mirror", name: "Mirror", sprite: "mirror", height: 2.8, stick: true, at: [-40, 1.8], mutter: ["Look at me. No, really look.", "I only show what you bring."] },
+  { id: "mirror", name: "Mirror", sprite: "mirror", height: 2.8, stick: true, at: [12.8, 4.3], mutter: ["Look at me. No, really look.", "I only show what you bring."] },
   { id: "tendrils", name: "Tendrils", sprite: "tendrils", height: 2.2, stick: true, at: [-22, 1.5], mutter: ["Something keeps growing out of me.", "Pluck it. No, don't."] },
   { id: "redeye", name: "Red Eye", sprite: "redeye", height: 2.4, stick: true, at: [-43, 5.1], mutter: ["Haven't slept since I was drawn.", "My eyes do that on their own."] },
   { id: "balloon", name: "Balloon Man", sprite: "balloon-gang", height: 4.2, at: [-30, 6.8], move: "walk", mutter: ["I'm holding it together. Barely.", "Don't pop it. Please don't pop it."] },

@@ -156,7 +156,7 @@ and it fills in with the original pencil scan plus the artist's note
 (`src/album-notes.js`, one line per character, empty until written). Each
 card pays 15 pus. Antenna (you) fills in last.
 
-**Mirror's shop.** Talk to Mirror to spend pus: bigger pockets, bigger
+**Mirror's shop.** Mirror stands in the starting area, right side. Talk to him to spend pus: bigger pockets, bigger
 can, glob magnet, fly bait, faster feet, and cosmetics drawn on you
 (wart, unibrow, stain, tuft, drool). `ITEMS` in `src/shop.js`.
 
