@@ -12,6 +12,8 @@ import { createScraps } from "./scraps.js";
 import { createLife } from "./life.js";
 import { createSplash } from "./splash.js";
 import { createTips } from "./tips.js";
+import { startOver } from "./ui/confirm.js";
+import { PAGES } from "./album.js";
 import { CYCLE_SECONDS, START_PHASE } from "./daynight.js";
 import { AREA } from "./config.js";
 import { createProgress } from "./progress.js";
@@ -233,8 +235,15 @@ async function boot() {
   requestAnimationFrame(tick);
 
   const startOverlay = document.getElementById("startOverlay");
-  pressStart.textContent = "\u25B6 PRESS START";
+  const returning = progress.hasProgress();
+  pressStart.textContent = returning ? "\u25B6 CONTINUE" : "\u25B6 PRESS START";
   pressStart.disabled = false;
+  // Coming back: say what's saved, and offer a clean start as a new player.
+  if (returning) {
+    document.getElementById("returningSum").textContent = `${progress.pus} pus, ${progress.pageCount()}/${PAGES.length} cards saved`;
+    document.getElementById("returning").hidden = false;
+    document.getElementById("newPlayer").addEventListener("click", () => startOver(progress));
+  }
   pressStart.addEventListener("click", () => {
     unlock();
     music.play();

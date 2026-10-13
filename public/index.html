@@ -112,8 +112,17 @@
         </section>
       </div>
       <button id="pressStart" class="chunk" disabled>LOADING&hellip;</button>
+      <p id="returning" hidden><span id="returningSum"></span> &middot; <button id="newPlayer" class="linkBtn">new player? start over</button></p>
       <button class="musicBtn" id="musicMenu" hidden aria-label="Turn music off"></button>
       <p class="fine"><span id="buildTag">dev build</span> &middot; all art hand-drawn</p>
+    </div>
+  </div>
+
+  <div id="confirm" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" hidden>
+    <div class="confirmCard">
+      <h2 id="confirmTitle"></h2>
+      <p id="confirmText"></p>
+      <div class="confirmBtns"><button id="confirmNo" class="chunk"></button><button id="confirmYes" class="chunk danger"></button></div>
     </div>
   </div>
 

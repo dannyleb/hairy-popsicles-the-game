@@ -7,6 +7,7 @@ import { ITEMS, maxOf, priceOf, upgrades } from "../shop.js";
 import { CURIOS, curioTexture, drawCosmetic, skinTile, WALL_SKIN } from "../ink.js";
 import { INK } from "../config.js";
 import { sfx } from "../sfx.js";
+import { startOver } from "./confirm.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -232,7 +233,9 @@ export function createMenus({ progress, hud, img, setPaused, onShopChange, onVie
       <button class="chunk" data-go="achievements">Achievements${dot("achievements")} <small>${progress.achievementCount()}/${ACHIEVEMENTS.length}</small></button>
       <button class="chunk" data-go="shop">Mirror's Shop${dot("shop")} <small>${progress.pus} pus</small></button>
       <button class="chunk" data-go="share">Share your Self-Portrait</button>
+      <button class="linkBtn" id="startOver">new player? start over</button>
     </div>`;
+    $("startOver").addEventListener("click", () => startOver(progress));
     for (const b of body.querySelectorAll("[data-go]")) b.addEventListener("click", () => {
       const go = b.dataset.go;
       if (go === "resume") return close();

@@ -45,8 +45,9 @@ export function createProgress() {
     }
   } catch {}
 
-  let saveTimer = 0;
+  let saveTimer = 0, wiped = false;
   const save = () => {
+    if (wiped) return;
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch {} }, 250);
   };
@@ -114,6 +115,18 @@ export function createProgress() {
 
     achieved: (id) => !!s.achievements[id],
     achievementCount: () => Object.keys(s.achievements).length,
+
+    // Anything worth keeping? (Visit days alone don't count.)
+    hasProgress: () => s.pus > 0 || ["pages", "achievements", "owned", "curios"].some((k) => Object.keys(s[k]).length > 0)
+      || ["pops", "talks", "toadFills"].some((k) => (s.stats[k] || 0) > 0),
+
+    // New player: forget everything (the caller reloads the page).
+    reset() {
+      clearTimeout(saveTimer);
+      wiped = true;
+      s = blank();
+      try { localStorage.removeItem(KEY); localStorage.removeItem(OLD_PUS_KEY); } catch {}
+    },
 
     // Called once per load: counts a new visit day and returns a gift.
     visit() {
