@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Bringing your save over</title>
+  <style>
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0e0608; color: #f0d9c8; font: 18px system-ui, sans-serif; text-align: center; }
+  </style>
+</head>
+<body>
+  <p>Bringing your Hairy Popsicles: The MMO save to hairypopsicles.com…</p>
+  <script>
+    // Hairy Popsicles: The MMO used to live at dannyleb.github.io/hairy-popsicles-the-mmo/
+    // and now lives at hairypopsicles.com. Its saves stayed in this address's
+    // storage (dannyleb.github.io, which this site shares), so this page reads
+    // them and hands them to the new home after # in its address, which never
+    // leaves the phone. It only ever sends them there.
+    (function () {
+      var HOME = 'https://hairypopsicles.com/';
+      var KEYS = ['hptm:profile', 'hptm:pals', 'hptm:name', 'hptm:settings', 'hptm:invitedBy'];
+      var carry = {};
+      try {
+        KEYS.forEach(function (key) {
+          var value = localStorage.getItem(key);
+          if (value !== null) carry[key] = value;
+        });
+      } catch (e) {
+        // Storage blocked: nothing to bring.
+      }
+      var code = 'none';
+      if (carry['hptm:profile']) {
+        var bytes = new TextEncoder().encode(JSON.stringify(carry));
+        var text = '';
+        for (var i = 0; i < bytes.length; i++) text += String.fromCharCode(bytes[i]);
+        code = btoa(text).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      }
+      location.replace(HOME + '#carry=' + code);
+    })();
+  </script>
+</body>
+</html>
